@@ -33,8 +33,6 @@ extract the archive, and place the binary somewhere on your PATH.
 | Platform        | File                              |
 |-----------------|-----------------------------------|
 | Linux x86\_64   | `cmagent-linux-x86_64.tar.gz`    |
-| Linux aarch64   | `cmagent-linux-aarch64.tar.gz`   |
-| macOS x86\_64   | `cmagent-macos-x86_64.tar.gz`    |
 | macOS aarch64   | `cmagent-macos-aarch64.tar.gz`   |
 | Windows x86\_64 | `cmagent-windows-x86_64.zip`     |
 
@@ -57,6 +55,16 @@ cmagent -m "Explain this codebase"
 cmagent --agent coding
 ```
 
+## Update
+
+```sh
+cmagent update
+```
+
+Checks GitHub for a newer release, downloads the correct binary for your
+platform, verifies the checksum, and replaces the running executable in place.
+Add `--yes` to skip the confirmation prompt.
+
 ## Configuration
 
 Config lives in `~/.cmagent/`. Run `cmagent init` to set up providers and
@@ -69,6 +77,41 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
 See `cmagent doctor` to verify your setup.
+
+## Modes
+
+### Terminal (default)
+
+`cmagent` opens an interactive TUI. `cmagent -m "..."` runs a single message
+and exits. Both modes read from `~/.cmagent/` and write conversation history
+to a local SQLite database.
+
+### Gateway (HTTP API)
+
+`cmagent gateway` starts a local HTTP API server (default port 3100). The
+gateway exposes a REST and WebSocket interface so other tools, scripts, or
+web frontends can send messages and receive streaming responses.
+
+```sh
+# Start the gateway
+cmagent gateway --port 3100
+
+# Connect the TUI to a remote gateway instead of a local provider
+cmagent tui --remote http://host:3100 --token <token>
+```
+
+User accounts and bearer tokens are managed with `cmagent gateway user add`.
+
+### ACP (Agent Client Protocol)
+
+`cmagent acp` starts a stdio-based server that speaks the Agent Client
+Protocol. Use this to embed cmagent as a subprocess inside another
+application or IDE extension. The host sends JSON messages over stdin and
+reads streaming responses from stdout.
+
+```sh
+cmagent acp --agent coding
+```
 
 ## Requirements
 
