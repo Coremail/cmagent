@@ -113,6 +113,29 @@ reads streaming responses from stdout.
 cmagent acp --agent coding
 ```
 
+### Ralph Loop (long iterative tasks)
+
+`cmagent ralph` runs a long task as a series of short, independent
+iterations. Each iteration spawns a fresh agent session that reads the
+workspace, takes one small step, updates `STATUS.md`, and exits. The loop
+continues until the agent writes a `done` sentinel or `max_iter` is reached.
+
+Use it for tasks that are too large for a single conversation — bulk
+refactors, language ports, multi-step migrations.
+
+```sh
+# Create a task and edit its goal
+cmagent ralph new "Port http client from reqwest to ureq"
+# (edit ~/.cmagent/ralph/<id>/prompt.md)
+
+# Run the loop
+cmagent ralph run <id>
+
+# Monitor progress
+cmagent ralph status <id>
+cmagent ralph tail <id>
+```
+
 ## Requirements
 
 - No runtime dependencies — single static binary.
