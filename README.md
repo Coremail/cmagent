@@ -42,17 +42,20 @@ Each archive contains a single binary (`cmagent` or `cmagent.exe`) and a
 ## Quick start
 
 ```sh
-# First-time setup: configure a provider (e.g. Anthropic)
+# First time only: configure a provider (e.g. Anthropic)
 cmagent init
 
-# Interactive chat
+# Most common: launch the full-screen TUI
+cmagent tui
+
+# Run without args to get a menu (TUI / line chat / gateway / config / status)
 cmagent
 
-# Single message
+# One-shot: send a single message and exit (non-interactive)
 cmagent -m "Explain this codebase"
 
-# Use a specific agent profile
-cmagent --agent coding
+# Pick an agent profile (default reads from ~/.cmagent/config.toml)
+cmagent tui --agent coding
 ```
 
 ## Update
@@ -78,62 +81,102 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 
 See `cmagent doctor` to verify your setup.
 
-## Modes
+## Commands
 
-### Terminal (default)
+### Default (`cmagent`)
 
-`cmagent` opens an interactive TUI. `cmagent -m "..."` runs a single message
-and exits. Both modes read from `~/.cmagent/` and write conversation history
-to a local SQLite database.
+With no arguments, opens a menu picker (TUI / Chat / Gateway / Config /
+Status / Doctor). Useful when you want to switch interaction modes
+without remembering the subcommand. On first launch this also triggers
+the setup wizard.
 
-### Gateway (HTTP API)
+### `cmagent tui` — full-screen TUI (recommended)
 
-`cmagent gateway` starts a local HTTP API server (default port 3100). The
-gateway exposes a REST and WebSocket interface so other tools, scripts, or
-web frontends can send messages and receive streaming responses.
+The primary interactive mode. Renders a scrollable chat pane, live
+tool/thinking tree, status bar, and rich input with paste folding,
+slash commands, and per-turn editing. This is the mode most users want
+day-to-day.
 
 ```sh
-# Start the gateway
-cmagent gateway --port 3100
+cmagent tui                                 # default workspace + agent
+cmagent tui --agent coding                  # pick an agent
+cmagent tui -c                              # continue the most recent session
+cmagent tui --session <id>                  # resume a specific session
+cmagent tui --remote http://host:3100 --token <tk>  # connect to a remote gateway
+```
 
-# Connect the TUI to a remote gateway instead of a local provider
-cmagent tui --remote http://host:3100 --token <token>
+### `cmagent chat` — line-based REPL
+
+Plain stdin/stdout REPL with no fullscreen takeover. Useful inside
+restricted terminals, log scrapers, or when piping output. No mouse, no
+panels — just `>` prompt + response.
+
+```sh
+cmagent chat --agent coding
+cmagent chat -c
+```
+
+### `cmagent -m "..."` — single message
+
+Non-interactive one-shot: send the message, print the agent's reply,
+exit with a non-zero code on tool/policy errors. Ideal for scripts,
+cron, and CI hooks.
+
+```sh
+cmagent -m "Summarize CHANGELOG.md" --agent docs
+echo "review this diff" | cmagent -m "$(cat -)"
+```
+
+### `cmagent gateway` — HTTP API
+
+Local HTTP server (default port 3100) exposing REST + WebSocket so other
+tools, scripts, or web frontends can drive the agent.
+
+```sh
+cmagent gateway --port 3100
+cmagent tui --remote http://host:3100 --token <token>  # remote TUI client
 ```
 
 User accounts and bearer tokens are managed with `cmagent gateway user add`.
 
-### ACP (Agent Client Protocol)
+### `cmagent acp` — IDE / external tool protocol
 
-`cmagent acp` starts a stdio-based server that speaks the Agent Client
-Protocol. Use this to embed cmagent as a subprocess inside another
-application or IDE extension. The host sends JSON messages over stdin and
-reads streaming responses from stdout.
+Stdio-based JSON-RPC 2.0 server speaking the Agent Client Protocol. Use
+this to embed cmagent as a subprocess inside another application or IDE
+extension.
 
 ```sh
 cmagent acp --agent coding
 ```
 
-### Ralph Loop (long iterative tasks)
+### `cmagent ralph` — long iterative tasks
 
-`cmagent ralph` runs a long task as a series of short, independent
-iterations. Each iteration spawns a fresh agent session that reads the
-workspace, takes one small step, updates `STATUS.md`, and exits. The loop
-continues until the agent writes a `done` sentinel or `max_iter` is reached.
+Runs a long task as a series of short, independent iterations. Each
+iteration spawns a fresh agent session that reads the workspace, takes
+one small step, updates `STATUS.md`, and exits. The loop continues until
+the agent writes a `done` sentinel or `max_iter` is reached.
 
-Use it for tasks that are too large for a single conversation — bulk
-refactors, language ports, multi-step migrations.
+Use it for tasks too large for a single conversation — bulk refactors,
+language ports, multi-step migrations.
 
 ```sh
-# Create a task and edit its goal
 cmagent ralph new "Port http client from reqwest to ureq"
 # (edit ~/.cmagent/ralph/<id>/prompt.md)
-
-# Run the loop
 cmagent ralph run <id>
+cmagent ralph status <id> | tail
+```
 
-# Monitor progress
-cmagent ralph status <id>
-cmagent ralph tail <id>
+### Utility commands
+
+```sh
+cmagent init          # first-time setup wizard
+cmagent config        # interactive config editor
+cmagent doctor        # diagnostics (providers, sandbox, skill deps, ...)
+cmagent workspace     # browse / delete / rename saved sessions
+cmagent skill <cmd>   # list / install / setup / enable / disable skills
+cmagent brain <cmd>   # inspect long-term memory
+cmagent mcp <cmd>     # manage MCP servers
+cmagent update        # update the binary in place
 ```
 
 ## Requirements
