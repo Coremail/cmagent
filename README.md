@@ -79,6 +79,11 @@ Provider credentials are stored as environment variables. For Anthropic:
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
+If you already use the [OpenAI Codex CLI](https://github.com/openai/codex),
+`cmagent config provider -> Import from Codex CLI` re-uses the credentials
+already in `~/.codex/auth.json` (both API-key and ChatGPT-account OAuth
+flows are supported). See [docs/codex-import.md](docs/codex-import.md).
+
 See `cmagent doctor` to verify your setup.
 
 ## Commands
@@ -104,6 +109,34 @@ cmagent tui -c                              # continue the most recent session
 cmagent tui --session <id>                  # resume a specific session
 cmagent tui --remote http://host:3100 --token <tk>  # connect to a remote gateway
 ```
+
+#### Two TUIs: canvas (default) and streaming
+
+cmagent ships two interactive front-ends. Both speak to the same
+agent, share `/slash` commands, sessions, and config; they differ
+only in how they paint the screen.
+
+| Variant | What it is | When to pick it |
+|---|---|---|
+| `canvas` *(default)* | ratatui-based, multi-pane (transcript / sidebar / input). Mouse selection, in-place permission modals, live activity tree, sidebar showing tokens / context / git branch / MCP / todos / agent activity. | Local terminal, fast tty. Best at-a-glance signal density. |
+| `streaming` | Print-based, prints into the terminal's native scrollback. No alt-screen takeover; selection works via the terminal's normal copy/paste. | High-latency SSH, very wide remote sessions, recording demos with `script(1)`, terminals that mangle alt-screen. |
+
+Selection priority:
+
+1. CLI flag `--canvas` — forces canvas unconditionally.
+2. Config `[general] default_tui` — `"canvas"` (default) or `"streaming"`.
+3. Built-in fallback — `"canvas"`.
+
+Change the default via `cmagent config` → `Defaults` → `Default TUI`,
+or edit `~/.cmagent/config.toml` directly:
+
+```toml
+[general]
+default_tui = "streaming"
+```
+
+`cmagent` (no args) and `cmagent tui` (no flag) both honour the
+config. `cmagent tui --canvas` overrides everything.
 
 ### `cmagent chat` — line-based REPL
 
@@ -184,6 +217,90 @@ cmagent update        # update the binary in place
 - No runtime dependencies — single static binary.
 - Browser tools (`browser_query`, `browser_act`, `browser_eval`) require
   Chrome or Chromium on the host.
+
+## Directory layout
+
+cmagent splits state between a **global install directory** (one per
+user, holds all config, credentials, long-term memory, logs) and a
+**workspace directory** (one per project, holds per-project sessions,
+brain, scratch files).
+
+### Global install: `~/.cmagent/`
+
+Root is `~/.cmagent/` on Linux/macOS, `%USERPROFILE%\.cmagent\` on
+Windows. Override with the `CMAGENT_HOME` environment variable.
+
+```
+~/.cmagent/
+├── config.toml             # [general] defaults, [security], [browser], ...
+├── providers/              # one .toml per provider (anthropic, glm, openai-compat, ...)
+│   └── claude-default.toml
+├── agents/                 # agent profiles
+│   └── <name>/
+│       ├── config.toml     # profile (presets, tools, prompt_threshold, ...)
+│       ├── AGENT.md        # the agent's system-prompt body
+│       └── brain.db        # (optional) agent-private long-term memory
+├── presets/                # shared agent baselines (sys-default, ...)
+├── skills/                 # installed skills (one dir per skill)
+├── channels/               # channel adapter configs (lunkr, telegram, slack, ...)
+├── mcp/
+│   └── servers.toml        # MCP server registry
+├── plugins/                # installed Claude Code plugin bundles
+├── adapters/               # legacy adapter shims
+├── cron/                   # cron-schedule TOMLs
+├── ralph/<task-id>/        # Ralph loop task state (prompt.md, STATUS.md, iter logs)
+├── sessions/<id>/          # global (non-workspace) session JSON
+├── data/
+│   ├── brain.db            # global long-term memory (SQLite + FTS5)
+│   ├── audit.db            # channel inbound audit log (when enabled)
+│   ├── ralph.db            # Ralph task index
+│   └── logs/
+│       ├── cmagent.log.YYYY-MM-DD   # daily rolling app log
+│       └── panics.log               # panic backtraces (TUI mode)
+├── workspaces.toml         # registry of known project workspaces
+├── remotes.toml            # saved `--remote` gateway URLs + tokens
+├── gateway.toml            # gateway server config
+├── gateway.pid             # gateway process PID (when running)
+├── stt.toml / tts.toml / vision.toml  # media backend configs
+└── .env                    # provider credentials (ANTHROPIC_API_KEY, ...)
+```
+
+**Logs**: text logs land in `~/.cmagent/data/logs/cmagent.log.YYYY-MM-DD`
+(daily rotation, kept indefinitely — clean up by hand). Console only
+shows WARN+. Run with `--debug` to bump the file level to DEBUG; set
+`RUST_LOG=cmagent_core=trace` for finer per-module control.
+
+**Credentials**: never commit `.env`. The installer / `cmagent init`
+sets the right permissions; if you copy this directory between
+machines, copy `.env` separately and out-of-band.
+
+### Workspace: `<project>/.cmagent/`
+
+Created lazily the first time you launch cmagent inside a directory.
+Everything here is scoped to that one project.
+
+```
+<project>/.cmagent/
+├── workspace.toml          # workspace defaults (temp_provider / temp_model overrides,
+│                           # known sessions, display preferences like show_activity)
+├── brain.db                # workspace-scoped long-term memory
+├── sessions/
+│   ├── <uuid>.db           # one SQLite DB per session (transcript + tool calls)
+│   └── telegram-<chat>.db  # channel-bound sessions use a stable id, not UUID
+├── tmp/                    # agent scratch space (file_write to relative paths, etc.)
+├── tool-output/            # overflow storage for large tool outputs the chat
+│                           # transcript truncated (referenced via file://...)
+├── screenshots/            # `screenshot` tool drops PNGs here
+├── dl/                     # channel adapters store downloaded attachments here
+└── skills/                 # workspace-local skill overlays (optional)
+```
+
+The `tmp/` directory is the agent's safe scratch area. The sandbox's
+default policy whitelists writes inside the workspace; paths outside
+(`/tmp/...`, `~/Documents/...`) get rejected.
+
+Add `.cmagent/` to your project's `.gitignore` unless you want sessions
+and brain DBs in version control.
 
 ## License
 
