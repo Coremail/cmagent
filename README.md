@@ -123,7 +123,8 @@ only in how they paint the screen.
 
 Selection priority:
 
-1. CLI flag `--canvas` — forces canvas unconditionally.
+1. CLI flags `--canvas` / `--streaming` — force the named variant
+   for this session. Mutually exclusive.
 2. Config `[general] default_tui` — `"canvas"` (default) or `"streaming"`.
 3. Built-in fallback — `"canvas"`.
 
@@ -136,7 +137,8 @@ default_tui = "streaming"
 ```
 
 `cmagent` (no args) and `cmagent tui` (no flag) both honour the
-config. `cmagent tui --canvas` overrides everything.
+config. `cmagent tui --canvas` or `cmagent tui --streaming`
+override it for one session.
 
 ### `cmagent chat` — line-based REPL
 
@@ -216,7 +218,35 @@ cmagent update        # update the binary in place
 
 - No runtime dependencies — single static binary.
 - Browser tools (`browser_query`, `browser_act`, `browser_eval`) require
-  Chrome or Chromium on the host.
+  a Chromium-family browser on the host. See below.
+
+### Browser automation (optional)
+
+The three browser tools drive any CDP-speaking browser. cmagent detects
+Chrome, Chromium, Microsoft Edge, Brave, Vivaldi, and Opera on PATH and
+launches a headless instance automatically (`launch` mode, default).
+Run `cmagent doctor` to see whether the tools are currently enabled.
+
+If you want cmagent to **attach to a browser you already have open** —
+typical case: Windows + Edge — switch to `connect` mode:
+
+1. Start the browser with the debug port:
+   ```sh
+   msedge.exe --remote-debugging-port=9222          # Windows / Edge
+   google-chrome --remote-debugging-port=9222       # Linux / Chrome
+   ```
+2. Fetch the WebSocket URL:
+   ```sh
+   curl http://127.0.0.1:9222/json/version
+   ```
+   Copy the `webSocketDebuggerUrl` field from the response.
+3. Run `cmagent config` → **Browser Tool Configuration** → set
+   `mode = "connect"` and paste the URL into `connect_url`.
+4. Restart cmagent. `cmagent doctor` should report
+   `Browser tools: ENABLED`.
+
+Only loopback URLs (`127.0.0.1`, `[::1]`, `localhost`) are accepted in
+`connect_url`. Remote CDP endpoints are rejected at config time.
 
 ## Directory layout
 
