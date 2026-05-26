@@ -118,7 +118,7 @@ only in how they paint the screen.
 
 | Variant | What it is | When to pick it |
 |---|---|---|
-| `canvas` *(default)* | ratatui-based, multi-pane (transcript / sidebar / input). Mouse selection, in-place permission modals, live activity tree, sidebar showing tokens / context / git branch / MCP / todos / agent activity. | Local terminal, fast tty. Best at-a-glance signal density. |
+| `canvas` *(default)* | ratatui-based, multi-pane (transcript / sidebar / input). Mouse selection, in-place permission modals, live activity tree, sidebar showing tokens / context / git branch / MCP / plan / todos / goal / agent activity. | Local terminal, fast tty. Best at-a-glance signal density. |
 | `streaming` | Print-based, prints into the terminal's native scrollback. No alt-screen takeover; selection works via the terminal's normal copy/paste. | High-latency SSH, very wide remote sessions, recording demos with `script(1)`, terminals that mangle alt-screen. |
 
 Selection priority:
@@ -213,6 +213,65 @@ cmagent brain <cmd>   # inspect long-term memory
 cmagent mcp <cmd>     # manage MCP servers
 cmagent update        # update the binary in place
 ```
+
+## Tracking work: plan, todos, goal
+
+Inside a session (TUI or `chat`) the agent keeps three kinds of
+progress state. All three persist per session — they survive process
+restart and `/switch`, and are stored in the session's SQLite DB. In
+the canvas TUI each one renders as a status-bar chip (when the sidebar
+is hidden) or a sidebar panel (when it's open, toggle with `Ctrl+B`).
+
+### `/plan` — a visible multi-step roadmap
+
+A short roadmap (typically 3–8 coarse steps) the agent commits to at
+the start of a multi-step task. The agent drives it as a side effect of
+working (via its `update_plan` tool); each step is `pending`,
+`in progress`, `done`, or `skipped`. This is **not** a control loop —
+it just shows you what the agent intends to do and where it is.
+
+```
+/plan              # show the current plan (or note none is active)
+/plan clear        # drop the active plan
+/plan run [N]      # re-enter the agent to work the next pending step,
+                   # repeating until the plan is complete or N
+                   # iterations elapse (default 10, max 50). Ctrl+C
+                   # cancels mid-loop.
+```
+
+Completion is structural: the plan is done when no step is pending or
+in progress.
+
+### `/todos` — a fine-grained checklist
+
+An unbounded, granular checklist for the small tasks within a logical
+work batch (the agent adds and completes items via its `todo` tool).
+Each item is simply done or not done. The sidebar shows pending items
+with a count.
+
+```
+/todos             # show the list (also /todo)
+/todos clear       # wipe all todos
+```
+
+### `/goal` — an autonomous judge-evaluated loop
+
+Set a goal and the agent runs toward it on its own. After each turn a
+judge LLM reads the recent transcript and decides whether the goal's
+success criteria are visibly met; if not, its feedback is injected and
+the agent takes another turn. Unlike `/plan`, this **does** recurse
+automatically — it stops when the judge confirms completion or after a
+turn cap (50 by default).
+
+```
+/goal <text>       # e.g. /goal ship v0.3.0 with green tests
+/goal              # show the current goal and how many turns it has run
+/goal clear        # cancel the active goal
+```
+
+Per-agent `[goal]` config (in the agent's `config.toml`) can route the
+judge to a separate cheaper model (`judge_provider` / `judge_model`)
+and override the iteration cap (`max_iterations`).
 
 ## Requirements
 
