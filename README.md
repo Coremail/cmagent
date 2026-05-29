@@ -1,7 +1,12 @@
 # cmagent
 
-A terminal-based AI agent. Supports Anthropic, OpenAI-compatible, and GLM providers.
-Runs on Linux, macOS, and Windows.
+A terminal-based AI agent for real work — coding, automation, and chat.
+Full-screen TUI, multi-provider, with sub-agents, skills, MCP, language-server
+code intelligence, and chat-platform channels. Single static binary; runs on
+Linux, macOS, and Windows.
+
+Providers: Anthropic, OpenAI / OpenAI-compatible, and GLM (z.ai), plus
+anything reachable through an OpenAI-compatible endpoint.
 
 ## Install
 
@@ -26,370 +31,273 @@ Installs to `%LOCALAPPDATA%\cmagent\cmagent.exe` and adds it to your user PATH.
 
 ### Manual download
 
-Download the binary for your platform directly from the
-[Releases](https://github.com/Coremail/cmagent/releases/latest) page,
-extract the archive, and place the binary somewhere on your PATH.
+Download the binary for your platform from the
+[Releases](https://github.com/Coremail/cmagent/releases/latest) page, extract,
+and place it on your PATH.
 
-| Platform        | File                              |
-|-----------------|-----------------------------------|
-| Linux x86\_64   | `cmagent-linux-x86_64.tar.gz`    |
-| macOS aarch64   | `cmagent-macos-aarch64.tar.gz`   |
-| Windows x86\_64 | `cmagent-windows-x86_64.zip`     |
+| Platform        | File                            |
+|-----------------|---------------------------------|
+| Linux x86\_64   | `cmagent-linux-x86_64.tar.gz`   |
+| macOS aarch64   | `cmagent-macos-aarch64.tar.gz`  |
+| Windows x86\_64 | `cmagent-windows-x86_64.zip`    |
 
-Each archive contains a single binary (`cmagent` or `cmagent.exe`) and a
-`.sha256` checksum file.
+Each archive contains the single binary plus a `.sha256` checksum.
 
 ## Quick start
 
 ```sh
-# First time only: configure a provider (e.g. Anthropic)
-cmagent init
-
-# Most common: launch the full-screen TUI
-cmagent tui
-
-# Run without args to get a menu (TUI / line chat / gateway / config / status)
-cmagent
-
-# One-shot: send a single message and exit (non-interactive)
-cmagent -m "Explain this codebase"
-
-# Pick an agent profile (default reads from ~/.cmagent/config.toml)
-cmagent tui --agent coding
+cmagent init                    # first run: configure a provider (e.g. Anthropic)
+cmagent tui                     # launch the full-screen TUI (most common)
+cmagent                         # no args: menu (TUI / chat / gateway / config / status)
+cmagent -m "Explain this repo"  # one-shot: send a message and exit
+cmagent tui --agent coding      # pick an agent profile
 ```
 
-## Update
+`cmagent doctor` verifies your setup (providers, sandbox, language servers,
+skills, …) at any time.
 
-```sh
-cmagent update
-```
+## Features
 
-Checks GitHub for a newer release, downloads the correct binary for your
-platform, verifies the checksum, and replaces the running executable in place.
-Add `--yes` to skip the confirmation prompt.
+cmagent is more than a chat box. Each capability below links to its guide.
 
-## Configuration
+### Interfaces
 
-Config lives in `~/.cmagent/`. Run `cmagent init` to set up providers and
-preferences interactively, or `cmagent config` to edit settings at any time.
+Drive the same agent five ways:
 
-Provider credentials are stored as environment variables. For Anthropic:
+- **`cmagent tui`** — the recommended full-screen TUI. Two front-ends share
+  all commands, sessions, and config: **canvas** (default; multi-pane, mouse
+  selection, live tool/thinking tree, sidebar with tokens/context/git/plan/…)
+  and **streaming** (print-based into native scrollback, best for SSH / demos).
+  Pick with `--canvas` / `--streaming` or `[general] default_tui`.
+- **`cmagent chat`** — a plain stdin/stdout REPL for restricted terminals or
+  piping.
+- **`cmagent -m "…"`** — non-interactive one-shot for scripts, cron, and CI.
+- **`cmagent gateway`** — a local HTTP + WebSocket server so other tools, web
+  frontends, or remote TUI clients can drive the agent. See
+  [docs/gateway.md](docs/gateway.md).
+- **`cmagent acp`** — an Agent Client Protocol stdio server to embed cmagent in
+  an IDE or another app. See [docs/acp.md](docs/acp.md).
 
-```sh
-export ANTHROPIC_API_KEY="sk-ant-..."
-```
+### Providers & models
 
-If you already use the [OpenAI Codex CLI](https://github.com/openai/codex),
-`cmagent config provider -> Import from Codex CLI` re-uses the credentials
-already in `~/.codex/auth.json` (both API-key and ChatGPT-account OAuth
-flows are supported). See [docs/codex-import.md](docs/codex-import.md).
+Configure one or many providers; pin per-agent models and endpoints, or set a
+session override. Credentials live as environment variables (e.g.
+`ANTHROPIC_API_KEY`). If you use the OpenAI Codex CLI, cmagent can import its
+credentials — see [docs/codex-import.md](docs/codex-import.md). Full provider /
+model reference: [docs/configuration-guide.md](docs/configuration-guide.md).
 
-See `cmagent doctor` to verify your setup.
+### Agents & profiles
 
-## Commands
+An *agent profile* bundles a system prompt, a tool allowlist, a security
+posture (`prompt_threshold`, allowed commands, workspace leash), brain scopes,
+skills, and MCP servers. Shipped profiles include `coding`, `chat`, and
+`admin`; create your own with `cmagent config`. Profiles can inherit shared
+**presets**. Configuration: [docs/configuration-guide.md](docs/configuration-guide.md).
 
-### Default (`cmagent`)
+### Tools
 
-With no arguments, opens a menu picker (TUI / Chat / Gateway / Config /
-Status / Doctor). Useful when you want to switch interaction modes
-without remembering the subcommand. On first launch this also triggers
-the setup wizard.
+A broad built-in toolset — file read/write/edit, `apply_patch` (multi-file
+diffs + git-conflict resolution), gitignore-aware search, shell, web fetch/
+search, HTTP, memory, planning, and more — each gated by the security model.
+The agent's `tools = [...]` allowlist is the hard limit. Full catalog:
+[docs/tools.md](docs/tools.md).
 
-### `cmagent tui` — full-screen TUI (recommended)
+### Code intelligence (LSP)
 
-The primary interactive mode. Renders a scrollable chat pane, live
-tool/thinking tree, status bar, and rich input with paste folding,
-slash commands, and per-turn editing. This is the mode most users want
-day-to-day.
+`lsp_query` drives real language servers (rust-analyzer, pyright, gopls, …) for
+go-to-definition, references, hover, a token-lean file outline, project-wide
+symbol rename, and reference-updating file moves. See [docs/lsp.md](docs/lsp.md)
+(`cmagent lsp list` to see what to install).
 
-```sh
-cmagent tui                                 # default workspace + agent
-cmagent tui --agent coding                  # pick an agent
-cmagent tui -c                              # continue the most recent session
-cmagent tui --session <id>                  # resume a specific session
-cmagent tui --remote http://host:3100 --token <tk>  # connect to a remote gateway
-```
+### Skills
 
-#### Two TUIs: canvas (default) and streaming
+Skills are SKILL.md bundles (prompt + optional slash commands) loaded from
+`~/.cmagent/skills/`. Selection is deterministic (keyword/tag/regex, not LLM),
+and trust levels attenuate tool risk. Claude Code plugin bundles are supported.
+See [docs/skill-slash-commands.md](docs/skill-slash-commands.md) and
+[docs/skill-packages.md](docs/skill-packages.md).
 
-cmagent ships two interactive front-ends. Both speak to the same
-agent, share `/slash` commands, sessions, and config; they differ
-only in how they paint the screen.
+### Sub-agents
 
-| Variant | What it is | When to pick it |
-|---|---|---|
-| `canvas` *(default)* | ratatui-based, multi-pane (transcript / sidebar / input). Mouse selection, in-place permission modals, live activity tree, sidebar showing tokens / context / git branch / MCP / plan / todos / goal / agent activity. | Local terminal, fast tty. Best at-a-glance signal density. |
-| `streaming` | Print-based, prints into the terminal's native scrollback. No alt-screen takeover; selection works via the terminal's normal copy/paste. | High-latency SSH, very wide remote sessions, recording demos with `script(1)`, terminals that mangle alt-screen. |
+`spawn_agent` and `plan_tasks` fan work out to specialized, spawn-only workers
+(`sub-coder`, `sub-reviewer`, `sub-debugger`, `sub-researcher`, …), each with
+its own tool surface and depth limit. Agents can also message each other (A2A)
+via `sessions_send`.
 
-Selection priority:
+### Long-term memory (brain)
 
-1. CLI flags `--canvas` / `--streaming` — force the named variant
-   for this session. Mutually exclusive.
-2. Config `[general] default_tui` — `"canvas"` (default) or `"streaming"`.
-3. Built-in fallback — `"canvas"`.
+Layered memory — global, per-workspace, and per-agent — that the agent reads
+and writes via the `brain` tool, with FTS search and a memory browser.
+`learn_rule` lets the agent persist a confirmed rule for next session. See
+[docs/memory.md](docs/memory.md).
 
-Change the default via `cmagent config` → `Defaults` → `Default TUI`,
-or edit `~/.cmagent/config.toml` directly:
+### Channels (messaging)
 
-```toml
-[general]
-default_tui = "streaming"
-```
+Run cmagent as a bot on **Telegram, Slack, Discord, WeChat, or Lunkr**: it
+answers on a channel and can proactively send messages, files, and interactive
+buttons through one unified `messaging_*` surface. Inbound can be audited. See
+[docs/channels.md](docs/channels.md).
 
-`cmagent` (no args) and `cmagent tui` (no flag) both honour the
-config. `cmagent tui --canvas` or `cmagent tui --streaming`
-override it for one session.
+### MCP
 
-### `cmagent chat` — line-based REPL
+Connect Model Context Protocol servers to expose their tools, resources, and
+prompts to an agent. Manage with `cmagent mcp`; configure per profile. See
+[docs/configuration-guide.md](docs/configuration-guide.md).
 
-Plain stdin/stdout REPL with no fullscreen takeover. Useful inside
-restricted terminals, log scrapers, or when piping output. No mouse, no
-panels — just `>` prompt + response.
+### Hooks & cron
 
-```sh
-cmagent chat --agent coding
-cmagent chat -c
-```
+Run commands on lifecycle events (session start, before/after tool calls, …)
+via Claude-Code-compatible hooks, and schedule recurring agent prompts or
+maintenance with a built-in cron scheduler. See [docs/hooks-cron.md](docs/hooks-cron.md).
 
-### `cmagent -m "..."` — single message
+### Ralph loop — long iterative tasks
 
-Non-interactive one-shot: send the message, print the agent's reply,
-exit with a non-zero code on tool/policy errors. Ideal for scripts,
-cron, and CI hooks.
-
-```sh
-cmagent -m "Summarize CHANGELOG.md" --agent docs
-echo "review this diff" | cmagent -m "$(cat -)"
-```
-
-### `cmagent gateway` — HTTP API
-
-Local HTTP server (default port 3100) exposing REST + WebSocket so other
-tools, scripts, or web frontends can drive the agent.
-
-```sh
-cmagent gateway --port 3100
-cmagent tui --remote http://host:3100 --token <token>  # remote TUI client
-```
-
-User accounts and bearer tokens are managed with `cmagent gateway user add`.
-
-### `cmagent acp` — IDE / external tool protocol
-
-Stdio-based JSON-RPC 2.0 server speaking the Agent Client Protocol. Use
-this to embed cmagent as a subprocess inside another application or IDE
-extension.
-
-```sh
-cmagent acp --agent coding
-```
-
-### `cmagent ralph` — long iterative tasks
-
-Runs a long task as a series of short, independent iterations. Each
-iteration spawns a fresh agent session that reads the workspace, takes
-one small step, updates `STATUS.md`, and exits. The loop continues until
-the agent writes a `done` sentinel or `max_iter` is reached.
-
-Use it for tasks too large for a single conversation — bulk refactors,
-language ports, multi-step migrations.
+Run a task too large for one conversation as a series of fresh,
+single-step iterations that read the workspace, take one step, update
+`STATUS.md`, and exit — until a `done` sentinel or `max_iter`. For bulk
+refactors, ports, and migrations. See [docs/ralph-loop.md](docs/ralph-loop.md).
 
 ```sh
 cmagent ralph new "Port http client from reqwest to ureq"
-# (edit ~/.cmagent/ralph/<id>/prompt.md)
 cmagent ralph run <id>
-cmagent ralph status <id> | tail
 ```
 
-### Utility commands
+### Tracking work in a session: plan, todos, goal
+
+Three kinds of progress state, all persisted per session:
+
+| | What | Loop? |
+|---|---|---|
+| `/plan` | A short, visible roadmap (3–8 steps) the agent commits to. `/plan run [N]` re-enters to work the next step. | manual |
+| `/todos` | A fine-grained checklist for the small tasks in a batch. | no |
+| `/goal <text>` | An autonomous, judge-evaluated loop: a judge LLM checks each turn against the goal and re-prompts until met (or a turn cap). | automatic |
+
+In the canvas TUI each shows as a status-bar chip or a sidebar panel
+(`Ctrl+B`).
+
+## Commands
 
 ```sh
-cmagent init          # first-time setup wizard
-cmagent config        # interactive config editor
-cmagent doctor        # diagnostics (providers, sandbox, skill deps, ...)
-cmagent workspace     # browse / delete / rename saved sessions
-cmagent skill <cmd>   # list / install / setup / enable / disable skills
-cmagent brain <cmd>   # inspect long-term memory
-cmagent mcp <cmd>     # manage MCP servers
-cmagent update        # update the binary in place
+cmagent                 # menu picker (first run: setup wizard)
+cmagent tui [--agent X] [-c] [--session ID] [--remote URL --token T]
+cmagent chat [--agent X] [-c]      # line-based REPL
+cmagent -m "..." [--agent X]       # one-shot, non-interactive
+cmagent gateway [--port 3100]      # HTTP API; `gateway user add` for tokens
+cmagent acp [--agent X]            # ACP stdio server (IDE integration)
+cmagent ralph <new|run|status|...> # long iterative tasks
+cmagent init                       # first-time setup wizard
+cmagent config                     # interactive config editor
+cmagent doctor [--fix]             # diagnostics (+ auto-fix migrations)
+cmagent docs [topic]               # read the bundled guides in the terminal
+cmagent lsp list                   # supported language servers + install hints
+cmagent workspace                  # browse / rename / delete sessions
+cmagent skill <cmd>                # list / install / enable / disable skills
+cmagent brain <cmd>                # inspect long-term memory
+cmagent mcp <cmd>                  # manage MCP servers
+cmagent update [--yes]             # update the binary in place
 ```
 
-## Tracking work: plan, todos, goal
+`cmagent update` checks GitHub for a newer release, downloads the right binary,
+verifies the checksum, and replaces the running executable.
+See [docs/update.md](docs/update.md).
 
-Inside a session (TUI or `chat`) the agent keeps three kinds of
-progress state. All three persist per session — they survive process
-restart and `/switch`, and are stored in the session's SQLite DB. In
-the canvas TUI each one renders as a status-bar chip (when the sidebar
-is hidden) or a sidebar panel (when it's open, toggle with `Ctrl+B`).
+## Configuration
 
-### `/plan` — a visible multi-step roadmap
+Config lives in `~/.cmagent/` (override with `CMAGENT_HOME`). Run `cmagent init`
+to set up providers and preferences, or `cmagent config` to edit any time. The
+[configuration guide](docs/configuration-guide.md) is the full reference for
+providers, agent profiles, presets, skills, MCP, and every config field.
 
-A short roadmap (typically 3–8 coarse steps) the agent commits to at
-the start of a multi-step task. The agent drives it as a side effect of
-working (via its `update_plan` tool); each step is `pending`,
-`in progress`, `done`, or `skipped`. This is **not** a control loop —
-it just shows you what the agent intends to do and where it is.
+## Security
 
-```
-/plan              # show the current plan (or note none is active)
-/plan clear        # drop the active plan
-/plan run [N]      # re-enter the agent to work the next pending step,
-                   # repeating until the plan is complete or N
-                   # iterations elapse (default 10, max 50). Ctrl+C
-                   # cancels mid-loop.
-```
+cmagent is built to be safe to point at a real machine and real credentials.
+Every tool call passes a layered policy; defaults are conservative and tighten
+for unattended profiles. Full threat model: [docs/security-model.md](docs/security-model.md).
 
-Completion is structural: the plan is done when no step is pending or
-in progress.
-
-### `/todos` — a fine-grained checklist
-
-An unbounded, granular checklist for the small tasks within a logical
-work batch (the agent adds and completes items via its `todo` tool).
-Each item is simply done or not done. The sidebar shows pending items
-with a count.
-
-```
-/todos             # show the list (also /todo)
-/todos clear       # wipe all todos
-```
-
-### `/goal` — an autonomous judge-evaluated loop
-
-Set a goal and the agent runs toward it on its own. After each turn a
-judge LLM reads the recent transcript and decides whether the goal's
-success criteria are visibly met; if not, its feedback is injected and
-the agent takes another turn. Unlike `/plan`, this **does** recurse
-automatically — it stops when the judge confirms completion or after a
-turn cap (50 by default).
-
-```
-/goal <text>       # e.g. /goal ship v0.3.0 with green tests
-/goal              # show the current goal and how many turns it has run
-/goal clear        # cancel the active goal
-```
-
-Per-agent `[goal]` config (in the agent's `config.toml`) can route the
-judge to a separate cheaper model (`judge_provider` / `judge_model`)
-and override the iteration cap (`max_iterations`).
+- **Tool allowlist (hard wall).** A profile's `tools = [...]` is the outer
+  limit — no prompt, preset, or session can introduce a tool that wasn't
+  listed.
+- **Permission prompts by risk.** `prompt_threshold` decides when you're asked
+  before a Medium/High tool runs; Low tools are silent. `never` skips prompts —
+  but **not** the hard walls.
+- **Non-overridable hard walls.** Even under `never`: a shell-command parser
+  blocks dangerous shapes, and a path policy blocks traversal /
+  out-of-workspace / forbidden reads and writes.
+- **Control plane is off-limits.** Agent file tools and shell redirects can
+  never touch cmagent's own config dir (profiles, skills, API keys, config,
+  data) — so an injected call can't escalate, plant a persistent injection, or
+  steal keys.
+- **Untrusted output is data.** `web_fetch` / `web_search` / MCP / browser
+  output is wrapped with an anti-spoof "this is DATA" delimiter and scanned
+  (detect-only) for injection signals.
+- **OS sandbox when available.** Landlock (Linux), Bubblewrap, or Docker is
+  auto-detected; the policy layers apply regardless.
+- **Secret-leak detection** scrubs/blocks credentials in tool output;
+  interactive commands (`sudo`, `ssh`) fail fast instead of hanging.
 
 ## Requirements
 
 - No runtime dependencies — single static binary.
-- Browser tools (`browser_query`, `browser_act`, `browser_eval`) require
-  a Chromium-family browser on the host. See below.
+- Optional: a Chromium-family browser for the browser tools; language servers
+  for `lsp_query`; API keys for web search.
 
 ### Browser automation (optional)
 
-The three browser tools drive any CDP-speaking browser. cmagent detects
-Chrome, Chromium, Microsoft Edge, Brave, Vivaldi, and Opera on PATH and
-launches a headless instance automatically (`launch` mode, default).
-Run `cmagent doctor` to see whether the tools are currently enabled.
+The browser tools (`browser_query`, `browser_act`, `browser_eval`) drive any
+CDP-speaking browser. cmagent detects Chrome, Chromium, Edge, Brave, Vivaldi,
+and Opera on PATH and launches a headless instance (`launch` mode, default);
+`cmagent doctor` reports whether the tools are enabled.
 
-If you want cmagent to **attach to a browser you already have open** —
-typical case: Windows + Edge — switch to `connect` mode:
+To **attach to a browser you already have open** (typical: Windows + Edge),
+switch to `connect` mode:
 
 1. Start the browser with the debug port:
    ```sh
    msedge.exe --remote-debugging-port=9222          # Windows / Edge
    google-chrome --remote-debugging-port=9222       # Linux / Chrome
    ```
-2. Fetch the WebSocket URL:
-   ```sh
-   curl http://127.0.0.1:9222/json/version
-   ```
-   Copy the `webSocketDebuggerUrl` field from the response.
-3. Run `cmagent config` → **Browser Tool Configuration** → set
-   `mode = "connect"` and paste the URL into `connect_url`.
-4. Restart cmagent. `cmagent doctor` should report
-   `Browser tools: ENABLED`.
+2. Fetch the WebSocket URL: `curl http://127.0.0.1:9222/json/version` and copy
+   `webSocketDebuggerUrl`.
+3. `cmagent config` → **Browser Tool Configuration** → set `mode = "connect"`
+   and paste the URL into `connect_url`.
+4. Restart cmagent; `cmagent doctor` should report `Browser tools: ENABLED`.
 
 Only loopback URLs (`127.0.0.1`, `[::1]`, `localhost`) are accepted in
-`connect_url`. Remote CDP endpoints are rejected at config time.
+`connect_url`.
 
-## Directory layout
+## Where things live
 
-cmagent splits state between a **global install directory** (one per
-user, holds all config, credentials, long-term memory, logs) and a
-**workspace directory** (one per project, holds per-project sessions,
-brain, scratch files).
-
-### Global install: `~/.cmagent/`
-
-Root is `~/.cmagent/` on Linux/macOS, `%USERPROFILE%\.cmagent\` on
-Windows. Override with the `CMAGENT_HOME` environment variable.
+cmagent splits state between a **global install dir** (`~/.cmagent/`, override
+with `CMAGENT_HOME`) and a **per-project workspace dir** (`<project>/.cmagent/`).
 
 ```
 ~/.cmagent/
-├── config.toml             # [general] defaults, [security], [browser], ...
-├── providers/              # one .toml per provider (anthropic, glm, openai-compat, ...)
-│   └── claude-default.toml
-├── agents/                 # agent profiles
-│   └── <name>/
-│       ├── config.toml     # profile (presets, tools, prompt_threshold, ...)
-│       ├── AGENT.md        # the agent's system-prompt body
-│       └── brain.db        # (optional) agent-private long-term memory
-├── presets/                # shared agent baselines (sys-default, ...)
-├── skills/                 # installed skills (one dir per skill)
-├── channels/               # channel adapter configs (lunkr, telegram, slack, ...)
-├── mcp/
-│   └── servers.toml        # MCP server registry
-├── plugins/                # installed Claude Code plugin bundles
-├── adapters/               # legacy adapter shims
-├── cron/                   # cron-schedule TOMLs
-├── ralph/<task-id>/        # Ralph loop task state (prompt.md, STATUS.md, iter logs)
-├── sessions/<id>/          # global (non-workspace) session JSON
-├── data/
-│   ├── brain.db            # global long-term memory (SQLite + FTS5)
-│   ├── audit.db            # channel inbound audit log (when enabled)
-│   ├── ralph.db            # Ralph task index
-│   └── logs/
-│       ├── cmagent.log.YYYY-MM-DD   # daily rolling app log
-│       └── panics.log               # panic backtraces (TUI mode)
-├── workspaces.toml         # registry of known project workspaces
-├── remotes.toml            # saved `--remote` gateway URLs + tokens
-├── gateway.toml            # gateway server config
-├── gateway.pid             # gateway process PID (when running)
-├── stt.toml / tts.toml / vision.toml  # media backend configs
-└── .env                    # provider credentials (ANTHROPIC_API_KEY, ...)
-```
+├── config.toml          # [general] defaults, [security], [browser], ...
+├── providers/           # one .toml per provider
+├── agents/<name>/       # profiles: config.toml + AGENT.md (+ optional brain.db)
+├── presets/             # shared agent baselines
+├── skills/  channels/   # installed skills; channel adapter configs
+├── mcp/servers.toml     # MCP server registry
+├── cron/  ralph/        # cron schedules; Ralph task state
+├── sessions/  data/     # global sessions; brain.db / audit.db / logs
+└── .env                 # provider credentials (never commit)
 
-**Logs**: text logs land in `~/.cmagent/data/logs/cmagent.log.YYYY-MM-DD`
-(daily rotation, kept indefinitely — clean up by hand). Console only
-shows WARN+. Run with `--debug` to bump the file level to DEBUG; set
-`RUST_LOG=cmagent_core=trace` for finer per-module control.
-
-**Credentials**: never commit `.env`. The installer / `cmagent init`
-sets the right permissions; if you copy this directory between
-machines, copy `.env` separately and out-of-band.
-
-### Workspace: `<project>/.cmagent/`
-
-Created lazily the first time you launch cmagent inside a directory.
-Everything here is scoped to that one project.
-
-```
 <project>/.cmagent/
-├── workspace.toml          # workspace defaults (temp_provider / temp_model overrides,
-│                           # known sessions, display preferences like show_activity)
-├── brain.db                # workspace-scoped long-term memory
-├── sessions/
-│   ├── <uuid>.db           # one SQLite DB per session (transcript + tool calls)
-│   └── telegram-<chat>.db  # channel-bound sessions use a stable id, not UUID
-├── tmp/                    # agent scratch space (file_write to relative paths, etc.)
-├── tool-output/            # overflow storage for large tool outputs the chat
-│                           # transcript truncated (referenced via file://...)
-├── screenshots/            # `screenshot` tool drops PNGs here
-├── dl/                     # channel adapters store downloaded attachments here
-└── skills/                 # workspace-local skill overlays (optional)
+├── workspace.toml       # workspace defaults
+├── sessions/<id>.db     # one SQLite DB per session (transcript + tool calls)
+├── brain.db  tmp/  dl/  # workspace memory; agent scratch; channel downloads
+└── tool-output/ screenshots/
 ```
 
-The `tmp/` directory is the agent's safe scratch area. The sandbox's
-default policy whitelists writes inside the workspace; paths outside
-(`/tmp/...`, `~/Documents/...`) get rejected.
+Logs roll daily in `~/.cmagent/data/logs/`; run with `--debug` (or
+`RUST_LOG=cmagent_core=trace`) for more. Add `.cmagent/` to your project's
+`.gitignore` unless you want sessions and brain DBs in version control.
 
-Add `.cmagent/` to your project's `.gitignore` unless you want sessions
-and brain DBs in version control.
+## Documentation
+
+Full guides are in [docs/](docs/README.md): configuration, security model,
+tools, code intelligence, channels, gateway, ACP, memory, skills, Ralph loop,
+and update.
 
 ## License
 
