@@ -37,7 +37,7 @@ cmagent see the README and `docs/configuration-guide.md`.
 │  ┌────────┐  ┌────────┐  ┌─────────┐  ┌────────┐  ┌──────────┐  │
 │  │provider│  │ tool   │  │security │  │storage │  │ channels │  │
 │  │(LLM)   │  │(20+    │  │(4-layer │  │(SQLite │  │(Lunkr /  │  │
-│  │        │  │tools)  │  │ stack)  │  │ +redb) │  │ TG/Slack │  │
+│  │        │  │tools)  │  │ stack)  │  │ +FTS5) │  │ TG/Slack │  │
 │  └────────┘  └────────┘  └─────────┘  └────────┘  └──────────┘  │
 │  ┌────────┐  ┌────────┐  ┌─────────┐  ┌────────┐                │
 │  │ config │  │  mcp   │  │protocol │  │  lsp   │                │
@@ -51,17 +51,19 @@ cmagent see the README and `docs/configuration-guide.md`.
 | Crate                | Owns                                                          |
 |----------------------|---------------------------------------------------------------|
 | `cmagent-config`     | TOML / YAML schemas, loader, provider/skill/MCP catalogs, OAuth helpers (Codex), env+keyring access. |
-| `cmagent-storage`    | SQLite history + audit + Ralph state, redb brain store, schema migrations. |
+| `cmagent-storage`    | SQLite history + audit + Ralph state, SQLite brain store (FTS5 trigram search), schema migrations. |
 | `cmagent-security`   | Input guard, application policy, OS sandbox (Landlock/bwrap/Docker/Noop), output safety. |
 | `cmagent-provider`   | LLM backends (`openai`, `openai_compatible`, `openai_codex`, `anthropic`, `glm`), SSE streaming, auto reasoning. |
 | `cmagent-tool`       | Built-in tools (file, shell, browser, search, memory, messaging, audit, ...), tool registry, schema cleaning. |
 | `cmagent-mcp`        | MCP client + stdio server (model context protocol). |
 | `cmagent-protocol`   | A2A inter-agent message framing. |
 | `cmagent-channels`   | Inbound/outbound adapters for Lunkr, Telegram, Slack, Discord, WeChat. |
-| `cmagent-gateway`    | HTTP + WebSocket gateway, multi-user RBAC, channel registration. |
-| `cmagent-core`       | Agent loop, dispatcher, undo manager, skill selector, hooks, cron, Ralph runner, hard-gate extraction. |
+| `cmagent-gateway`    | HTTP + WebSocket gateway, multi-user RBAC, channel registration, cron scheduler/executor. |
+| `cmagent-core`       | Agent loop, dispatcher, undo manager, skill selector, hooks, Ralph runner, hard-gate extraction. |
 | `cmagent-interface`  | Terminal manager, scroll region, soft-wrap (grapheme-aware, scroll-to-cursor), paste-burst tracker, panels, workspace browser, memory TUI. |
-| `cmagent-lsp`        | LSP language services for tool-aware diagnostics. |
+| `cmagent-lsp`        | LSP code intelligence (definitions / references / hover / symbols / rename / file moves) behind the `lsp_query` tool. |
+| `cmagent-media`      | Media backends: image vision, audio transcription (STT), text-to-speech (TTS), ffmpeg helpers. |
+| `cmagent-plugin`     | Claude Code plugin-bundle loading (skills / hooks / MCP from installed plugins). |
 
 The binary crate (`cmagent`) sits on top: CLI parsing, command
 dispatch (`init` / `tui` / `chat` / `gateway` / `acp` / `ralph` /

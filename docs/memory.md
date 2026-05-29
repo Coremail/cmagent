@@ -258,7 +258,11 @@ The merge step skips an LLM call when there is little to consolidate:
 
 ## Storage
 
-The brain databases are SQLite with FTS5 full-text indexes on `content`.
+The brain databases are SQLite with an FTS5 **trigram** index over
+`content`/`detail`, so `/memory search` matches substrings in any script
+— including CJK / Japanese / Korean / Thai, which the default FTS5
+word tokenizer can't segment. (The index is built going forward; very
+old pre-index rows may not be searchable until rewritten.)
 Schema: `memories(key PRIMARY KEY, content, detail, category, created_at,
 updated_at)`. They are durable across crashes and safe to copy/back up
 while cmagent is running (SQLite WAL mode).

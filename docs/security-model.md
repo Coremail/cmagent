@@ -76,9 +76,9 @@ These are fixed in code (`crates/cmagent-tool/src/builtin/`).
 
 | Risk | Tools |
 |---|---|
-| Low | `file_read`, `list_dir`, `glob_search`, `content_search`, `history_search`, `web_fetch`, `web_search`, `brain`, `todo`, `messaging_query`, `audit_query` |
-| Medium | `file_write`, `file_edit`, `multi_edit`, `apply_patch`, `http_request`, `trash`, `messaging_send`, MCP tool adapters |
-| High | `shell`, `spawn_agent`, `plan_tasks`, `ask_user`, `diff_preview`, `tool_search` |
+| Low | `file_read`, `list_dir`, `glob_search`, `content_search`, `history_search`, `brain`, `todo`, `update_plan`, `learn_rule`, `ask_user`, `diff_preview`, `tool_search`, `help`, `audit_query`, `messaging_query` — plus `browser_query`, `vision`, `screenshot`, `tts` when present |
+| Medium | `file_write`, `file_edit`, `apply_patch`, `trash`, `http_request`, `web_fetch`, `web_search`, `lsp_query`, `messaging_send`, `sessions_send`, `browser_act`, MCP tool adapters |
+| High | `shell`, `spawn_agent`, `plan_tasks`, `skill_manager`, `browser_eval` |
 
 Low-risk tools are always silent regardless of `prompt_threshold`.
 

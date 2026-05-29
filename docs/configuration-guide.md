@@ -40,8 +40,10 @@ provider setup, security policy, prompt assembly, and agent profiles.
 ├── sessions/
 │   └── {uuid}.db            # SQLite per-session history
 ├── data/
-│   ├── brain.db             # redb global memory (key-value store)
-│   └── audit.jsonl          # Security audit log
+│   ├── brain.db             # SQLite global memory (FTS5 trigram search)
+│   ├── audit.jsonl          # Hook/security event audit log (append-only JSONL)
+│   ├── audit.db             # Channel inbound audit log (SQLite + FTS5; opt-in per account)
+│   └── ralph.db             # Ralph long-task index (SQLite)
 └── plugins/                 # External plugins (v0.2+)
 ```
 
@@ -57,7 +59,7 @@ provider setup, security policy, prompt assembly, and agent profiles.
 | `skills/{id}/` | Directory | Skill: one or more `.md` files concatenated as prompt |
 | `skills/manifest.toml` | TOML | Tracks skill sources, versions, availability |
 | `sessions/{uuid}.db` | SQLite | Per-session conversation history (audit + context) |
-| `data/brain.db` | redb | Global persistent memory (key-value with categories) |
+| `data/brain.db` | SQLite | Global persistent memory (FTS5 trigram search, layered categories) |
 
 Most files are optional. Missing files produce sensible defaults.
 Run `cmagent init` to create the directory structure and set up
@@ -256,7 +258,7 @@ default_action = "block"       # "allow" | "block"
 
 [storage]
 history_backend = "sqlite"     # Session history backend
-brain_backend = "redb"         # Global memory backend
+brain_backend = "sqlite"       # Global memory backend (default)
 
 [interface]
 default = "cli"                # Default interface (cli | tui | web)
@@ -340,9 +342,9 @@ the agent's explicit `tools = [...]` allowlist.
 
 | Risk | Tools |
 |------|-------|
-| Low | file_read, list_dir, glob_search, content_search, history_search, web_fetch, web_search, brain, todo, messaging_query, audit_query |
-| Medium | file_write, file_edit, multi_edit, apply_patch, http_request, trash, messaging_send, MCP adapters |
-| High | shell, spawn_agent, plan_tasks, ask_user |
+| Low | file_read, list_dir, glob_search, content_search, history_search, brain, todo, update_plan, learn_rule, ask_user, diff_preview, tool_search, help, audit_query, messaging_query (+ browser_query, vision, screenshot, tts when present) |
+| Medium | file_write, file_edit, apply_patch, trash, http_request, web_fetch, web_search, lsp_query, messaging_send, sessions_send, browser_act, MCP adapters |
+| High | shell, spawn_agent, plan_tasks, skill_manager, browser_eval |
 
 **`prompt_threshold` semantics:**
 

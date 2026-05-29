@@ -43,8 +43,8 @@ so the exact set an agent sees depends on your environment. Run
 | Tool | Risk | What it does |
 |---|---|---|
 | `shell` | High | Run a command. The command parser blocks dangerous shapes even under `never`; the allowlist + path policy still apply. |
-| `web_fetch` | Low | Fetch a URL as text/markdown. Output is wrapped as untrusted data. |
-| `web_search` | Low | Web search via the configured backend (Tavily / Brave / Serper / DuckDuckGo). Registered only when a backend is set. |
+| `web_fetch` | Medium | Fetch a URL as text/markdown. Output is wrapped as untrusted data. |
+| `web_search` | Medium | Web search via the configured backend (Tavily / Brave / Serper / DuckDuckGo). Registered only when a backend is set. |
 | `http_request` | Medium | Make an arbitrary HTTP request. |
 
 ## Memory, planning & sub-agents
@@ -55,10 +55,10 @@ so the exact set an agent sees depends on your environment. Run
 | `learn_rule` | Low | Append a user-confirmed rule to the agent's `LEARNED.md` (loaded next session). |
 | `update_plan` | Low | Maintain the session `/plan` roadmap. |
 | `todo` | Low | Maintain the session `/todos` checklist. |
-| `plan_tasks` | Medium | Fan work out across sub-agents and collect results. |
-| `spawn_agent` | Medium | Spawn a sub-agent (`sub-coder`, `sub-reviewer`, …) for an isolated task. |
+| `plan_tasks` | High | Fan work out across sub-agents and collect results. |
+| `spawn_agent` | High | Spawn a sub-agent (`sub-coder`, `sub-reviewer`, …) for an isolated task. |
 | `ask_user` | Low | Ask the operator a question mid-task. |
-| `skill_manager` | Medium | Install / enable / disable skills (a sanctioned control-plane writer). |
+| `skill_manager` | High | Install / enable / disable skills (a sanctioned control-plane writer). |
 | `tool_search` | Low | Discover and activate tools that aren't in the active set. |
 
 ## Browser (optional)
