@@ -201,6 +201,22 @@ cmagent update [--yes]             # update the binary in place
 verifies the checksum, and replaces the running executable.
 See [docs/update.md](docs/update.md).
 
+### In-session controls
+
+While typing in the TUI or chat:
+
+- **`/help`** — list every slash command (`/model`, `/agent`, `/session`,
+  `/plan`, `/todo`, `/undo`, `/compact`, …).
+- **`@`** — open a file browser; the picked file's contents are spliced into
+  your message on send.
+- **`Ctrl+Y`** — copy the last reply as markdown (or click the `⧉` button).
+- **`Ctrl+O`** — open the activity viewer (tool calls, thinking, diffs);
+  `Ctrl+Y` there copies the selected entry.
+- **`/steer`** / **`/queue`** — redirect or line up input while the agent is
+  working.
+
+Full keybinding + command reference: [docs/commands.md](docs/commands.md).
+
 ## Configuration
 
 Config lives in `~/.cmagent/` (override with `CMAGENT_HOME`). Run `cmagent init`
@@ -296,7 +312,8 @@ Logs roll daily in `~/.cmagent/data/logs/`; run with `--debug` (or
 ## Documentation
 
 Full guides are in [docs/](docs/README.md): configuration, security model,
-tools, code intelligence, channels, gateway, ACP, memory, skills, Ralph loop,
+tools, interactive commands (`@`-files, `/steer`, copy), code intelligence,
+channels, media (vision/TTS/STT), gateway, ACP, memory, skills, Ralph loop,
 and update.
 
 ## License

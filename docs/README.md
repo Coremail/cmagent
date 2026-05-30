@@ -9,6 +9,7 @@ Start with the [README](../README.md) for an overview; these guides go deep.
 | [architecture.md](architecture.md) | How the binary wires up; crates and the agent loop |
 | [configuration-guide.md](configuration-guide.md) | Providers, agent profiles, skills, presets, MCP, config reference |
 | [tools.md](tools.md) | The built-in tool catalog (risk levels, what each does) |
+| [commands.md](commands.md) | Interactive `/` commands, `@`-file mentions, `/steer` & `/queue` |
 | [security-model.md](security-model.md) | Risk levels, security gates, tool permissions |
 
 ## Capabilities
@@ -16,7 +17,8 @@ Start with the [README](../README.md) for an overview; these guides go deep.
 | Document | Description |
 |---|---|
 | [lsp.md](lsp.md) | Code intelligence: definitions, references, outline, rename, file moves |
-| [channels.md](channels.md) | Telegram / Slack / Discord / WeChat / Lunkr messaging (in + out) |
+| [channels.md](channels.md) | Telegram / Slack / Discord / WeChat / Lunkr messaging (in + out), per-channel capability matrix |
+| [media.md](media.md) | Vision, text-to-speech (TTS), and speech-to-text (STT) settings |
 | [memory.md](memory.md) | Brain layers, review summaries, memory browser TUI |
 | [skill-slash-commands.md](skill-slash-commands.md) | User-invocable skills and command dispatch |
 | [skill-packages.md](skill-packages.md) | Nested skill packages, hooks.json, Claude Code plugin compatibility |

@@ -465,6 +465,9 @@ SOUL.md > IDENTITY.md > RULES.md > EXPERTISE.md > CONTEXT.md > TOOLS.md > USER.m
 ```
 
 Files not in the priority list are appended in lexicographic order.
+This is how the agent-curated `LEARNED.md` (see [Learned Rules](#learned-rules-learnedmd))
+is picked up: it is loaded just like a hand-written file, sorted after
+the eight known names.
 
 ## Agent Profile System
 
@@ -513,6 +516,52 @@ agents/
     ├── SOUL.md
     └── EXPERTISE.md
 ```
+
+The eight template files above are hand-written (or scaffolded by
+`cmagent init`). One more file can appear in an agent directory that
+**you do not create by hand** -- `LEARNED.md`, described next.
+
+### Learned Rules (LEARNED.md)
+
+`agents/{name}/LEARNED.md` is the agent's own rule book: durable,
+always-on directives it has accumulated across sessions (a project
+convention, a preference you keep correcting). It is loaded into the
+system prompt exactly like `RULES.md` -- the only difference is who
+writes it.
+
+**Only the `learn_rule` tool writes this file**, and only after you
+explicitly approve. When the agent proposes a rule it gets a `Save` /
+`Discard` prompt; on `Save` the rule is appended as a single markdown
+bullet with a provenance comment:
+
+```markdown
+# Learned rules
+
+<!-- Curated by the agent via `learn_rule`, each entry user-approved.
+This file is loaded into the agent's system prompt. Edit or delete
+entries freely; lines starting with `- ` are the rules. -->
+
+- Always run cargo fmt before committing.  <!-- learned 2026-05-29; user corrected this twice -->
+```
+
+Key properties:
+
+- **Applies from the *next* session, not the current turn.** The file
+  is read when the agent profile loads, so a freshly learned rule takes
+  effect after a restart.
+- **Per agent.** Each agent has its own `LEARNED.md`; a rule learned by
+  `coding` does not affect `chat`.
+- **Confirmation required.** Without an interactive session (cron,
+  Ralph) the tool refuses rather than auto-writing, and it never touches
+  `RULES.md`, `config.toml`, or any security field -- it writes this one
+  file via its own path, never through the generic `file_write` tool.
+- **Bounded.** Up to 100 rules / 8 KiB (it is in every system prompt).
+  When full, `learn_rule` errors and asks you to prune the file.
+- **Hand-editable.** It is plain markdown -- edit or delete bullets
+  freely; lines starting with `- ` are the rules.
+
+Use `learn_rule` for always-applicable directives; one-off facts or
+contextual notes belong in the [`brain`](memory.md) memory tool instead.
 
 ### AgentProfile Fields
 
