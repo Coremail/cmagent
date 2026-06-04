@@ -47,10 +47,18 @@ In the TUI:
 | `Enter` | Drill into the entries panel from the tree |
 | `e` | Edit the selected entry in `$EDITOR` |
 | `d` / `Delete` | Delete the selected entry (confirms first) |
-| `PgUp` / `PgDn` | Scroll the detail pane |
+| `PgUp` / `PgDn` / `Home` / `End` | Scroll the detail pane |
+| drag (mouse) | Select text in the detail pane |
+| `Ctrl+Y` | Copy the detail selection to the clipboard |
 | `q` / `Esc` | Quit |
 
 Hints render in a single-row footer that follows the active panel.
+
+The detail pane is the shared selectable/copyable text pane used by all
+the full-screen viewers (see [commands.md](commands.md#full-screen-viewers)):
+drag to select across wrapped lines, press `Ctrl+Y` to copy the selection,
+or click the `⧉` box at its top-right to copy the selection-or-everything.
+Copy uses the OS clipboard with an OSC 52 fallback, so it works over SSH.
 
 ### Editing an entry
 

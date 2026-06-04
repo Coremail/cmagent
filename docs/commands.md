@@ -31,9 +31,42 @@ the built-in ones.
 | `/goal [text]` | Set or show the session goal. |
 | `/memory` (`/brain`) `[...]` | Open the memory browser / run brain operations. See [memory.md](memory.md). |
 | `/btw <text>` | Ask an ephemeral, read-only side question that doesn't alter the main thread. |
+| `/init` | Generate or consolidate the project's `AGENTS.md` — see [Project instructions](#project-instructions-init). |
+| `/debug [text]` | Open the request inspector (system prompt, context, tools, key-masked HTTP request, compaction preview). See [Full-screen viewers](#full-screen-viewers). Refused in channel sessions. |
 | `/quit` (`/exit`, `/q`) | Exit. |
 
 Unknown `/names` fall through to skill command matching.
+
+## Project instructions: `/init`
+
+cmagent reads a project-root `AGENTS.md` (if present) into the agent's
+context at session start — the cross-tool standard for "instructions for
+AI agents working in this repo". Only that one file is read: no walk-up,
+no nested files, and no fallback to `CLAUDE.md` / `GEMINI.md` / Cursor /
+Copilot (toggle with `[general] load_project_agents`).
+
+`/init` is how you create or refresh that file. It gathers what's already
+known about the project and asks the model to consolidate it into one
+coherent `AGENTS.md`:
+
+- any existing `AGENTS.md` (improved in place, not blindly overwritten);
+- instruction files other tools left behind — `CLAUDE.md`, `GEMINI.md`,
+  `.cursorrules` / `.cursor/rules/*.mdc`,
+  `.github/copilot-instructions.md`, `.clinerules`;
+- **the conversation so far** — what you've told the agent and what it's
+  already done (a primary source when the repo is still sparse);
+- key manifests, the README, and a bounded, gitignore-aware file tree.
+
+It **merges** these (dedupes, resolves conflicts) rather than
+concatenating, and is deliberately anti-filler: sections with no real
+information are omitted, there's no length target. If there's nothing to
+go on — an empty directory with no instruction files and no conversation
+— it generates **nothing** and tells you so.
+
+`/init` writes **only** `AGENTS.md` (never the source files), asks you to
+confirm first, and backs up any existing `AGENTS.md` before replacing it.
+The new file is loaded into the running session immediately. Other tools'
+files are read as input but never modified.
 
 ## Mentioning files with `@`
 
@@ -90,10 +123,50 @@ To grab a reply as markdown without a manual text selection:
 - **In the Activity viewer (`Ctrl+O`):** press **`Ctrl+Y`** (or click the
   `⧉` in the detail pane) to copy the **currently-selected entry** —
   a response, a thinking block, or a tool call's args/diff/output.
+- **In the other full-screen viewers** (Memory, Workspace, Debug — see
+  [Full-screen viewers](#full-screen-viewers)): drag to select text in the
+  detail pane, then **`Ctrl+Y`** copies the selection, or click its `⧉`
+  box to copy the selection-or-everything.
 
 The copy uses the OS clipboard with an OSC 52 fallback, so it also works
 over SSH / tmux. (Drag-to-select in the transcript still copies an
 arbitrary span, as before.)
+
+## Full-screen viewers
+
+Beyond the chat, cmagent has four full-screen TUI viewers. They share one
+detail pane with the same selection/copy/scroll controls (listed once
+below), so once you know one you know all four.
+
+| Viewer | Open with | Shows |
+|---|---|---|
+| **Activity** | `Ctrl+O` | The live tool-activity log for the session — each response, thinking block, and tool call (args / diff / output). |
+| **Memory** | `/memory` | The brain: layers, categories, and entries, with full content + detail. See [memory.md](memory.md). |
+| **Workspace** | `/session` → "⚙ Manage sessions…" | Workspaces, their sessions (incl. archived), conversation turns, and the full content of any turn. Delete / rename / filter sessions and turns from here. |
+| **Debug** | `/debug` | A snapshot of the system prompt, context, tool schemas, the (key-masked) HTTP request, and a compaction preview — for inspecting what the model actually sees. Refused in channel sessions (see note below). |
+
+**Shared controls** (in every viewer):
+
+| Key / action | Effect |
+|---|---|
+| `Tab` / `Shift+Tab` | Switch the active panel |
+| `↑` `↓` | Navigate the active list, or scroll the detail pane when it's focused |
+| `PgUp` / `PgDn` / `Home` / `End` | Scroll the detail pane |
+| drag (mouse) | Select text in the detail pane |
+| `Ctrl+Y` | Copy the detail selection to the clipboard |
+| click `⧉` (top-right of the detail) | Copy the selection, or everything if nothing is selected |
+| `q` / `Esc` | Close the viewer |
+
+Each viewer adds its own keys on top (e.g. Memory's `e` to edit, `d` to
+delete; Workspace's `r` to rename, `/` to filter) — its footer shows the
+panel-specific hints.
+
+**`/debug` and channel sessions.** The Debug inspector shows the system
+prompt and live context, so it is restricted to **operator surfaces**
+(TUI, chat, ACP, web). In a **channel session** (Telegram, Slack, Discord,
+WeChat, Lunkr) the agent refuses `/debug` — a remote channel user can't
+dump the operator's prompt or conversation. The API key in the snapshot is
+masked (`sk-…1234`) in all cases, so it is never exposed even locally.
 
 ## Steering a running turn: `/steer` and `/queue`
 

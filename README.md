@@ -212,10 +212,15 @@ While typing in the TUI or chat:
 - **`Ctrl+Y`** — copy the last reply as markdown (or click the `⧉` button).
 - **`Ctrl+O`** — open the activity viewer (tool calls, thinking, diffs);
   `Ctrl+Y` there copies the selected entry.
+- **Full-screen viewers** — Activity (`Ctrl+O`), Memory (`/memory`),
+  Workspace (`/session` → "Manage sessions…"), and Debug (`/debug`, debug
+  builds). They share one detail pane: drag to select, `Ctrl+Y` to copy.
 - **`/steer`** / **`/queue`** — redirect or line up input while the agent is
   working.
 
-Full keybinding + command reference: [docs/commands.md](docs/commands.md).
+Full keybinding + command reference, incl. the
+[full-screen viewers](docs/commands.md#full-screen-viewers):
+[docs/commands.md](docs/commands.md).
 
 ## Configuration
 
