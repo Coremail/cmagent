@@ -187,8 +187,35 @@ treated as a denial.
   sessions can be active within one process.
 - The `cwd` (workspace) determines which config, skills, and MCP servers
   are active for that session.
-- Not implemented (out of scope; not required for editor interop):
-  `session/fork`, `session/resume`, `session/set_mode`,
-  `session/set_config_option`, `authenticate`, dynamic MCP registration,
-  and the client-filesystem methods (`fs/read_text_file` /
-  `fs/write_text_file`) — cmagent uses its own file tools.
+### `session/set_mode`
+
+Switches the session's permission posture. cmagent advertises two modes in
+the `session/new` and `session/load` results:
+
+```json
+"modes": {
+  "currentModeId": "default",
+  "availableModes": [
+    {"id":"default","name":"Ask","description":"Ask before running tool actions that need permission."},
+    {"id":"auto","name":"Auto-approve","description":"Run tool actions without asking. The security policy still blocks denied actions."}
+  ]
+}
+```
+
+Request: `{"method":"session/set_mode","params":{"sessionId":"<id>","modeId":"auto"}}`.
+Result is an empty object; the agent also emits a `session/update` with
+`{"sessionUpdate":"current_mode_update","modeId":"auto"}`.
+
+In `auto` mode, tool actions that would otherwise prompt are auto-approved
+without a client round-trip. This only skips the interactive confirm —
+hard-denied actions are blocked earlier in tool dispatch and never reach the
+permission handler, so `auto` cannot run anything the security policy forbids.
+
+## Notes (continued)
+
+- Not implemented (optional; not required for editor interop):
+  `session/resume` (the implemented `session/load` already restores a session
+  WITH its history), `session/set_config_option`, `authenticate`, dynamic MCP
+  registration, and the client-filesystem methods (`fs/read_text_file` /
+  `fs/write_text_file`) — cmagent uses its own file tools. (`session/fork` is
+  not part of the ACP spec.)

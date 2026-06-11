@@ -63,7 +63,6 @@ cmagent see the README and `docs/configuration-guide.md`.
 | `cmagent-interface`  | Terminal manager, scroll region, soft-wrap (grapheme-aware, scroll-to-cursor), paste-burst tracker, panels, workspace browser, memory TUI. |
 | `cmagent-lsp`        | LSP code intelligence (definitions / references / hover / symbols / rename / file moves) behind the `lsp_query` tool. |
 | `cmagent-media`      | Media backends: image vision, audio transcription (STT), text-to-speech (TTS), ffmpeg helpers. |
-| `cmagent-plugin`     | Claude Code plugin-bundle loading (skills / hooks / MCP from installed plugins). |
 
 The binary crate (`cmagent`) sits on top: CLI parsing, command
 dispatch (`init` / `tui` / `chat` / `gateway` / `acp` / `ralph` /
