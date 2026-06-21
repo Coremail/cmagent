@@ -91,12 +91,18 @@ exact install commands and which servers are already on your `PATH`.
 
 ## Indexing, on-disk cache, and per-server setup
 
-A language server indexes asynchronously on first use. The very first
-query in a session — especially `definition` — can come back empty while
-indexing is still in flight; retrying a few seconds later resolves it.
-There is no manual "index" step; it happens automatically. cmagent keeps
-the server alive for the whole session, so this cold cost is paid once
-per session, not per query — but the server process is shut down when the
+A language server indexes asynchronously on first use. cmagent waits for
+that initial indexing to settle before the first semantic query — it
+watches the server's work-done progress (`$/progress`) and proceeds once
+the server goes quiescent, bounded by a few seconds. If a large project
+is still indexing past that budget, `lsp_query` returns a soft
+"server still indexing — retry shortly" result rather than a misleading
+empty answer or a hard error; just call it again in a few seconds. For
+servers that instead return the standard ContentModified "not ready" code
+while loading (e.g. rust-analyzer), cmagent retries transparently. There
+is no manual "index" step; it happens automatically. cmagent keeps the
+server alive for the whole session, so this cold cost is paid once per
+session, not per query — but the server process is shut down when the
 session ends.
 
 **cmagent pushes no settings to the server.** It sends the standard
