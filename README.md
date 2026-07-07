@@ -251,8 +251,10 @@ for unattended profiles. Full threat model: [docs/security-model.md](docs/securi
 - **Untrusted output is data.** `web_fetch` / `web_search` / MCP / browser
   output is wrapped with an anti-spoof "this is DATA" delimiter and scanned
   (detect-only) for injection signals.
-- **OS sandbox when available.** Landlock (Linux), Bubblewrap, or Docker is
-  auto-detected; the policy layers apply regardless.
+- **OS sandbox when available.** Shell commands run inside an OS sandbox —
+  Landlock (Linux, default, zero-install), Bubblewrap, Firejail, or a
+  podman/docker container — auto-detected; the policy layers apply regardless.
+  Install, permissions, and trade-offs: [docs/sandboxing.md](docs/sandboxing.md).
 - **Secret-leak detection** scrubs/blocks credentials in tool output;
   interactive commands (`sudo`, `ssh`) fail fast instead of hanging.
 

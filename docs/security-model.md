@@ -322,6 +322,12 @@ is off-limits to tools regardless of how trusted the profile is.
 6. **`extra_dirs` is the only knob for extra path access.** No other
    field adds paths -- and it cannot reach the control plane (Invariant 3).
 
+## Related Docs
+
+- [sandboxing.md](sandboxing.md) -- OS sandbox backends (Layer 2): Landlock /
+  bwrap / firejail / containers, how to install each, permission setup, and
+  trade-offs.
+
 ## Related Files
 
 - Runtime gate: `crates/cmagent-core/src/agent/mod.rs::check_security`

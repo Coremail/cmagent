@@ -11,6 +11,7 @@ Start with the [README](../README.md) for an overview; these guides go deep.
 | [tools.md](tools.md) | The built-in tool catalog (risk levels, what each does) |
 | [commands.md](commands.md) | Interactive `/` commands, `@`-file mentions, `/steer` & `/queue` |
 | [security-model.md](security-model.md) | Risk levels, security gates, tool permissions |
+| [sandboxing.md](sandboxing.md) | OS sandbox backends (Landlock / bwrap / firejail / containers): install, permissions, trade-offs |
 
 ## Capabilities
 
