@@ -89,8 +89,8 @@ model reference: [docs/configuration-guide.md](docs/configuration-guide.md).
 ### Agents & profiles
 
 An *agent profile* bundles a system prompt, a tool allowlist, a security
-posture (`prompt_threshold`, allowed commands, workspace leash), brain scopes,
-skills, and MCP servers. Shipped profiles include `coding`, `chat`, and
+posture (`prompt_threshold`, allowed commands, workspace leash), skills, and
+MCP servers. Shipped profiles include `coding`, `chat`, and
 `admin`; create your own with `cmagent config`. Profiles can inherit shared
 **presets**. Configuration: [docs/configuration-guide.md](docs/configuration-guide.md).
 
@@ -126,8 +126,8 @@ via `sessions_send`.
 
 ### Long-term memory (brain)
 
-Layered memory — global, per-workspace, and per-agent — that the agent reads
-and writes via the `brain` tool, with FTS search and a memory browser.
+Layered memory — global and per-workspace — that the agent reads and writes
+via the `brain` tool, with FTS search and a memory browser.
 `learn_rule` lets the agent persist a confirmed rule for next session. See
 [docs/memory.md](docs/memory.md).
 

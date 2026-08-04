@@ -52,7 +52,7 @@ so the exact set an agent sees depends on your environment. Run
 | Tool | Risk | What it does |
 |---|---|---|
 | `brain` | Low | Read/write long-term memory across global / workspace / agent layers. See [memory.md](memory.md). |
-| `learn_rule` | Low | Append a user-confirmed rule to the agent's `LEARNED.md` (loaded next session). |
+| `learn_rule` | Low | Append a user-confirmed rule to `<project>/LEARNED.md` (any agent here) or the agent's own `LEARNED.md` (this agent anywhere). Loaded next session. See [memory.md](memory.md#where-does-it-belong). |
 | `update_plan` | Low | Maintain the session `/plan` roadmap. |
 | `todo` | Low | Maintain the session `/todos` checklist. |
 | `plan_tasks` | High | Fan work out across sub-agents and collect results. |

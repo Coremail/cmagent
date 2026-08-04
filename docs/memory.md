@@ -1,20 +1,89 @@
 # Memory
 
-cmagent persists context across sessions in three layered key-value
-stores ("brains") plus an automatically-generated review chain that
-distills daily activity into longer-horizon summaries.
+cmagent persists context across sessions in two layered key-value stores
+("brains") plus an automatically-generated review chain that distills
+daily activity into longer-horizon summaries.
 
-## The three layers
+## The two layers
 
 | Layer | Path | Scope |
 |---|---|---|
 | `global` | `~/.cmagent/data/brain.db` | Shared across every workspace and agent |
-| `agent` | `~/.cmagent/agents/<name>/brain.db` | Specific to one agent profile |
 | `workspace` | `<workspace>/.cmagent/brain.db` | Specific to the current project directory |
+
+There was a third, `agent`. It is gone: the agent scope already has an
+answer in `learn_rule`, whose design settled deliberately on a file
+(`LEARNED.md`) because a rule has to be reviewable, editable and
+portable. A brain layer for the same scope only gave the agent a third
+place to file something and two ways to get it wrong -- and it had never
+once been shown back in the system prompt, so nothing was relying on it.
 
 When the agent reads or writes memory it touches the most specific
 relevant layer; reads also scan upward so workspace-level facts override
-global ones during context assembly.
+global ones during context assembly. Both layers are shown back to the
+agent in its system prompt each session.
+
+## Where does it belong?
+
+The brain is not the only place something durable can go, and picking the
+wrong one is the common mistake -- a rule about how a project must be
+worked on reads as "project knowledge", which is exactly what the brain's
+default layer is called.
+
+Two questions decide it.
+
+**Does it change what the agent DOES, or what it KNOWS?**
+
+A rule changes behaviour ("always run the tests before saying done"). A
+fact is looked up ("the parser lives in `crates/x`"). Rules go to
+`learn_rule`, facts to `brain`.
+
+**Who else does it apply to?**
+
+Every scope has **one database the agent maintains** and **one file a
+human maintains**. The database is for what is looked up and revised; the
+file is for what is read, reviewed and rolled back.
+
+| Scope | Agent writes (database) | Human writes / reviews (file) |
+|---|---|---|
+| Everywhere | `brain` layer `global` | `~/.cmagent/AGENTS.md` |
+| This agent | -- (use `learn_rule`) | `~/.cmagent/agents/<name>/LEARNED.md` |
+| This project | `brain` layer `workspace` | `<project>/LEARNED.md` |
+
+Alongside those sit the files a human writes and the agent never touches:
+the project's `AGENTS.md` (generated once by `/init`, hand-maintained
+after) and the agent's own persona files (`SOUL.md`, `IDENTITY.md`,
+`RULES.md`, ...). Those describe who the agent is and how the project
+works; they are not where new knowledge accumulates.
+
+So:
+
+| What it is | Where it goes |
+|---|---|
+| A rule the whole team must follow | `AGENTS.md` (project root) |
+| A rule learned while working here | `learn_rule` -> `<project>/LEARNED.md` |
+| A rule about how this agent works | `learn_rule` -> the agent's `LEARNED.md` |
+| A fact about this project | `brain` layer `workspace` |
+| A user preference or habit | `brain` layer `global` |
+
+What decides whether **other people** get it is where the file lands, not
+which tool wrote it:
+
+- **Project root** -- `AGENTS.md` and the project-level `LEARNED.md` both
+  sit beside your source and travel with the repository.
+- **Any `.cmagent/` directory** -- every brain layer, and the agent's own
+  `LEARNED.md` -- stays on the machine that wrote it. A colleague who
+  clones the repository sees none of it.
+
+So if a new contributor would have to be told, it belongs at the project
+root: `AGENTS.md` when it is about the project itself, project
+`LEARNED.md` when it is something you learned while working here.
+
+`learn_rule` asks for confirmation before writing, because a rule changes
+what the agent does next time. `brain` writes directly.
+
+Both `LEARNED.md` files and the project's `AGENTS.md` are read into the
+system prompt at session start, alongside the three brain layers.
 
 ## Slash-command quick reference
 
@@ -22,7 +91,7 @@ In the TUI:
 
 ```
 /memory                 Open the fullscreen memory browser
-/memory list [layer]    List entries (optional: global/agent/workspace)
+/memory list [layer]    List entries (optional: global/workspace)
 /memory search <query>  FTS5 search across content
 /memory show <key>      Print full content + detail
 /memory forget <key>    Remove an entry

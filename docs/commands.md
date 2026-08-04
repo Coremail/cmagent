@@ -6,6 +6,26 @@ commands too; those are covered separately in
 [skill-slash-commands.md](skill-slash-commands.md). This page documents
 the built-in ones.
 
+## Command availability differs by surface
+
+Not every command exists on every surface. Before recommending a
+command to a user, consider where they are:
+
+- **Terminal (TUI / chat REPL)**: all commands below.
+- **Web UI** (including the desktop shell): the model, agent profile,
+  and session are switched with **on-screen pickers**, not typed
+  commands — recommend those controls (the model/agent dropdowns in
+  the status bar; the session dropdown) instead of `/model`, `/agent`,
+  or `/session`. `/config`, `/init`, `/debug`, and `/quit` are
+  terminal-only and do nothing useful in the web UI. `/model
+  provider:model` still works if typed, but the picker is the intended
+  path.
+- **Messaging channels** (Telegram / Slack / ...): only a small
+  read-only subset applies.
+
+So when a user on the web asks how to change agent or model, tell them
+to use the picker in the UI, not `/agent` or `/model`.
+
 ## Built-in commands
 
 | Command | What it does |

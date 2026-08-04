@@ -594,8 +594,11 @@ mcp_servers = ["github", "filesystem"]
 # Tools to exclude (applied after all merging)
 tools_exclude = ["web_search"]
 
-# Brain scopes: "global", "workspace", "agent"
-brain_scopes = ["global", "workspace"]
+# Final-answer presentation. "direct" = results-first: no preamble or
+# process narration, the reply IS the deliverable (or the path of the
+# file holding it). Absent = inherit `[general] output_style` from
+# config.toml; set explicitly to override the global either way.
+# output_style = "direct"
 
 # Sandbox mode override
 sandbox = "auto"               # "auto" | "enabled" | "disabled"
@@ -662,7 +665,7 @@ accumulate; list-replace fields replace on any `Some`.
 |---|---|---|
 | Scalar | endpoint, model, sandbox, prompt_threshold, max_skill_risk, workspace_only, brain_readonly, relaxed_shell, sandbox_network | Later `Some` overwrites |
 | List-Replace | tools, mcp_servers, sub_agent_endpoints, allowed_commands | Later `Some` replaces entirely |
-| List-Union | skills, brain_scopes, tools_exclude, forbidden_paths, extra_dirs (by path) | Accumulated, deduplicated |
+| List-Union | skills, tools_exclude, forbidden_paths, extra_dirs (by path) | Accumulated, deduplicated |
 | Security | security block | Per-field (scalars overwrite, list fields as above) |
 
 `session` and `search` are taken from the agent's own profile only
