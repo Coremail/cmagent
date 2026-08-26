@@ -43,9 +43,16 @@ so the exact set an agent sees depends on your environment. Run
 | Tool | Risk | What it does |
 |---|---|---|
 | `shell` | High | Run a command. The command parser blocks dangerous shapes even under `never`; the allowlist + path policy still apply. |
-| `web_fetch` | Medium | Fetch a URL as text/markdown. Output is wrapped as untrusted data. |
+| `web_fetch` | Low | Fetch a URL as text/markdown. Output is wrapped as untrusted data. |
 | `web_search` | Medium | Web search via the configured backend (Tavily / Brave / Serper / DuckDuckGo). Registered only when a backend is set. |
 | `http_request` | Medium | Make an arbitrary HTTP request. |
+
+Both `web_fetch` and `http_request` can attach REAL cookies from a local
+logged-in browser profile, for hosts you list in `[security]
+cookie_domains` with a `[security.cookie_source]` to read them from. Off
+until configured, https-only, and any such call is raised to **High** risk
+so it asks first. See
+[security-model.md](security-model.md#browser-cookie-passthrough-cookie_domains--cookie_source).
 
 ## Memory, planning & sub-agents
 

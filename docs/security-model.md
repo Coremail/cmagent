@@ -46,6 +46,10 @@ Nine fields, each owning one axis.
 | `brain_readonly` | `Option<bool>` | When true, `brain` tool's `remember` / `forget` sub-actions are rejected even though `brain` itself is on the allowlist. Lets a persona carry a read-only reference memory. | `false` |
 | `relaxed_shell` | `Option<bool>` | Downgrade shell-parser `NeedsConfirm` (typically "program not in allow-list") to `Allow`. HardDeny is still enforced. Intended for trusted operator contexts (the shipped `admin` agent). | `false` |
 
+Two further `[security]` fields sit outside this table because they have no
+per-agent axis at all: `cookie_domains` and `cookie_source` are app-level
+only -- see [Browser Cookie Passthrough](#browser-cookie-passthrough-cookie_domains--cookie_source).
+
 ## Three Risk Axes (Not One)
 
 A common source of confusion: "risk" appears on three different artifacts,
@@ -76,11 +80,57 @@ These are fixed in code (`crates/cmagent-tool/src/builtin/`).
 
 | Risk | Tools |
 |---|---|
-| Low | `file_read`, `list_dir`, `glob_search`, `content_search`, `history_search`, `brain`, `todo`, `update_plan`, `learn_rule`, `ask_user`, `diff_preview`, `tool_search`, `help`, `audit_query`, `messaging_query` — plus `browser_query`, `vision`, `screenshot`, `tts` when present |
-| Medium | `file_write`, `file_edit`, `apply_patch`, `trash`, `http_request`, `web_fetch`, `web_search`, `lsp_query`, `messaging_send`, `sessions_send`, `browser_act`, MCP tool adapters |
+| Low | `file_read`, `list_dir`, `glob_search`, `content_search`, `history_search`, `brain`, `todo`, `update_plan`, `learn_rule`, `ask_user`, `diff_preview`, `tool_search`, `help`, `audit_query`, `messaging_query`, `web_fetch` — plus `browser_query`, `vision`, `screenshot`, `tts` when present |
+| Medium | `file_write`, `file_edit`, `apply_patch`, `trash`, `http_request`, `web_search`, `lsp_query`, `messaging_send`, `sessions_send`, `browser_act`, MCP tool adapters |
 | High | `shell`, `spawn_agent`, `plan_tasks`, `skill_manager`, `browser_eval` |
 
+These are the STATIC levels. A tool may raise the level of one specific
+call: `web_fetch` and `http_request` both report High for a URL that
+qualifies for browser cookie passthrough (see below).
+
 Low-risk tools are always silent regardless of `prompt_threshold`.
+
+## Browser Cookie Passthrough (`cookie_domains` / `cookie_source`)
+
+`web_fetch` / `http_request` can attach REAL cookies from a local browser
+profile you are already logged into, so a page that needs a session can be
+fetched at all. Two app-level `[security]` fields, both empty by default --
+nothing carries a cookie until BOTH are set.
+
+```toml
+[security]
+cookie_domains = ["docs.example.com", "*.wiki.example.com"]
+
+[security.cookie_source]
+browser = "firefox"       # firefox today; chrome/edge to follow
+profile = "abc123.work"   # profile DIRECTORY name; omit for the default
+```
+
+What to know before turning it on:
+
+- **App-level only.** No `AgentSecurityOverride` field, no per-agent entry,
+  not in the settings screens -- this is the machine's real login state,
+  not an agent-scoped resource. Edit `~/.cmagent/config.toml`.
+- **Exact host, or `*.example.com`.** A wildcard covers subdomains only,
+  never the bare apex, and matching is label-aware: `evilexample.com` does
+  not match `*.example.com`. A wildcard does hand your session to EVERY
+  subdomain, including one that appears via a subdomain takeover.
+- **https only.** An `http://` URL to a listed host behaves exactly like an
+  unlisted one -- no cookies, no elevation. The model chooses the URL and a
+  poisoned page can influence that choice; a cookie without the `Secure`
+  attribute must not leave in cleartext.
+- **A qualifying call is High risk**, so it asks first under
+  `prompt_threshold` `"medium"` and `"high"`. Only `never` profiles stay
+  silent, as they already do for every other risk-based prompt.
+- **Failures are loud.** A listed host with no `cookie_source`, a missing
+  profile, an unreadable database -- each is a tool error, never a quiet
+  fall back to an unauthenticated fetch. "The browser holds no cookie for
+  this host" is NOT a failure: that is a normal logged-out request.
+- **Values never leave the process.** A cookie goes from the browser's own
+  store into that one request's jar and nowhere else -- never into tool
+  output, logs, session history, or the model's context. `cmagent doctor`
+  reports whether the configured source is readable by COUNT, never by
+  content.
 
 ## `prompt_threshold` Semantics
 
@@ -334,6 +384,8 @@ is off-limits to tools regardless of how trusted the profile is.
 - Runtime thresholds: same file, `prompt_threshold` match
 - Skill ceiling: `crates/cmagent-core/src/skill_attenuation.rs`
 - Security policy: `crates/cmagent-security/src/policy.rs`
+- Browser cookies: `crates/cmagent-tool/src/browser_cookies/` (extraction,
+  allowlist matching) and `crates/cmagent-tool/src/net_fetch.rs` (the jar)
 - Shell parser: `crates/cmagent-security/src/shell_parser/decide.rs`
 - Wizard prompts: `src/commands/config/profile_edit.rs`
 - Schema: `crates/cmagent-config/src/agent.rs` (`AgentSecurityOverride`,

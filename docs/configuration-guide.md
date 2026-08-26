@@ -233,6 +233,13 @@ sandbox_container_memory_mb = 512           # Memory limit in MB
 sandbox_container_cpu_limit = 1.0           # CPU limit (1.0 = 1 core)
 sandbox_container_pids_limit = 256          # PID limit
 
+# Browser cookie passthrough for web_fetch / http_request. App-level
+# only -- no per-agent override. See docs/security-model.md.
+cookie_domains = []            # Hosts that may receive real browser cookies
+# [security.cookie_source]
+# browser = "firefox"          # Which local browser to read cookies from
+# profile = "abc123.work"      # Profile directory name (omit = default)
+
 [security.paths]
 forbidden = ["/etc", "/root", "~/.ssh", "~/.gnupg", "~/.aws"]
 
@@ -342,9 +349,15 @@ the agent's explicit `tools = [...]` allowlist.
 
 | Risk | Tools |
 |------|-------|
-| Low | file_read, list_dir, glob_search, content_search, history_search, brain, todo, update_plan, learn_rule, ask_user, diff_preview, tool_search, help, audit_query, messaging_query (+ browser_query, vision, screenshot, tts when present) |
-| Medium | file_write, file_edit, apply_patch, trash, http_request, web_fetch, web_search, lsp_query, messaging_send, sessions_send, browser_act, MCP adapters |
+| Low | file_read, list_dir, glob_search, content_search, history_search, brain, todo, update_plan, learn_rule, ask_user, diff_preview, tool_search, help, audit_query, messaging_query, web_fetch (+ browser_query, vision, screenshot, tts when present) |
+| Medium | file_write, file_edit, apply_patch, trash, http_request, web_search, lsp_query, messaging_send, sessions_send, browser_act, MCP adapters |
 | High | shell, spawn_agent, plan_tasks, skill_manager, browser_eval |
+
+`web_fetch` and `http_request` both report **High**, regardless of their
+table row above, for a URL whose host matches `[security] cookie_domains`
+-- that call attaches a real browser cookie and acts as the logged-in
+user. See [Browser Cookie Passthrough](security-model.md#browser-cookie-passthrough-cookie_domains--cookie_source)
+for details.
 
 **`prompt_threshold` semantics:**
 
