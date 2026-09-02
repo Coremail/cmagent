@@ -42,7 +42,8 @@ so the exact set an agent sees depends on your environment. Run
 
 | Tool | Risk | What it does |
 |---|---|---|
-| `shell` | High | Run a command. The command parser blocks dangerous shapes even under `never`; the allowlist + path policy still apply. |
+| `shell` | High | Run ONE command in a fresh shell. The command parser blocks dangerous shapes even under `never`; the allowlist + path policy still apply. |
+| `terminal` | High | A shell that STAYS OPEN across commands, so the directory after a `cd`, exported variables, an activated virtualenv, a login or a REPL are still there for the next one. `open` / `run` / `wait` / `input` / `close` / `list`. Commands run under a real terminal, so one that stops to ask something can be answered with `input`. The same allowlist, parser and prompts apply as to `shell`. Terminals close when the session ends. |
 | `web_fetch` | Low | Fetch a URL as text/markdown. Output is wrapped as untrusted data. |
 | `web_search` | Medium | Web search via the configured backend (Tavily / Brave / Serper / DuckDuckGo). Registered only when a backend is set. |
 | `http_request` | Medium | Make an arbitrary HTTP request. |
@@ -86,7 +87,7 @@ Registered when a channel account is configured. See
 
 | Tool | Risk | What it does |
 |---|---|---|
-| `messaging_query` | Low | Read surface: list channels/chats/contacts, list/search messages, download attachments. |
+| `messaging_query` | Low | Read surface: list channels/chats/contacts, list group members, list/search messages, download attachments. |
 | `messaging_send` | Medium | Write surface: send messages/files, edit/delete, buttons, `notify` an operator. Gated per-account by `allow_outbound_send`. |
 | `audit_query` | Low | Query the cross-channel inbound audit log (only the `sys-auditor` profile lists it by default). |
 | `sessions_send` | Medium | Send a message to another agent session (A2A). |
