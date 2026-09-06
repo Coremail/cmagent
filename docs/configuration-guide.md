@@ -15,6 +15,7 @@ provider setup, security policy, prompt assembly, and agent profiles.
 - [Agent Profile System](#agent-profile-system)
 - [Skills System](#skills-system)
 - [Quick Start Examples](#quick-start-examples)
+- [Moving a Configuration Between Machines](#moving-a-configuration-between-machines)
 
 ## Directory Layout
 
@@ -971,3 +972,44 @@ cmagent provider ping
 # Test a specific provider
 cmagent provider ping claude
 ```
+
+## Moving a Configuration Between Machines
+
+The desktop app's Settings screen has an **Import / Export** panel
+(`/api/settings/transfer/*`, desktop-only like every settings route). It
+writes one JSON bundle holding the records you tick:
+
+| Carried | Not carried |
+|---|---|
+| `providers/*.toml` | `channels/*` -- an account is a login on one platform |
+| `agents/<name>/` (user agents; text files only) | `agents/<name>/brain.db` and the rest of `data/` |
+| `presets/*.toml` | `gateway.toml`, its users and `CMAGENT_TOKEN_*` |
+| `skills/<name>/` | `workspaces.toml`, `[browser]` paths |
+| `mcp/servers.toml` entries | `sessions/`, `cron/`, `plugins/` |
+| `config.toml`: `[general] [security] [search] [interface]` | every other `config.toml` table |
+
+### Keys
+
+Carrying API keys is a separate tick and requires a passphrase. The keys
+are encrypted with it (ChaCha20-Poly1305 over a PBKDF2-HMAC-SHA256 key);
+the rest of the bundle stays readable, so a file can be inspected before
+it is imported. Which variables may be carried is decided by NAME, from
+the channel catalog and the `CMAGENT_TOKEN_` prefix -- a provider file
+naming a channel's variable as its `api_key_env` still does not carry
+that token away.
+
+A record whose key is on neither machine is marked "needs a key" in the
+import plan, with a box to type it; what is typed wins over what the
+bundle carried.
+
+### What an import does not inherit
+
+- A skill arrives with `Installed` trust and **no grants**. Tool,
+  command and hook grants are the exporting user's consent, given on
+  their machine.
+- An MCP server arrives **disabled**. It is a command this machine would
+  run.
+- Records that already exist are **skipped** unless "replace" is ticked.
+
+Bundles are versioned (`format_version`); a bundle written by a newer
+cmagent is refused rather than partially understood.
