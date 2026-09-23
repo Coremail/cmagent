@@ -62,6 +62,98 @@ the same surface regardless of platform:
   `messaging_send { action: "notify", channel, text }` to ping you when
   it's done — the one cross-scope exception.
 
+### Telling someone you are working on it
+
+On a channel that can show a draft, the reply appears as a placeholder
+and fills in, so there is something to look at while the agent thinks.
+Where there is no draft -- WeChat, Lunkr, or any account with
+`stream_mode = "off"` -- there is nothing at all between the question
+and the finished answer, and a slow turn is indistinguishable from a
+broken one.
+
+Two per-account settings fill that gap:
+
+```toml
+[accounts.config]
+ack_delay_secs = 4                                  # 0 = off (the default)
+ack_texts = ["one moment", "let me look", "checking"]
+```
+
+After `ack_delay_secs` seconds of a turn still running, one of
+`ack_texts` is sent. Both are in the desktop settings screen under the
+account's Behaviour section.
+
+What it does NOT do, each on purpose:
+
+- **Nothing when the answer is quick.** The message is raced against
+  the reply, so a turn that finishes in two seconds sends none. That is
+  what makes it safe to leave on.
+- **Nothing on a channel that shows a draft.** Gated on whether a draft
+  was actually created, not on the platform, so a Telegram account with
+  streaming off gets one and the same account with streaming on does
+  not.
+- **Nothing without `ack_texts`.** A delay on its own sends nothing
+  rather than a built-in sentence: whatever goes out carries the
+  operator's name, in their language.
+- **One per turn, and never a stream of them.** Three messages while
+  the agent works get three answers, not three reminders.
+- **It is not part of the conversation.** The agent never sees it. In
+  its own context the model would find itself having already answered.
+- **Off unless asked for.** This sends an unsolicited message from your
+  account; no existing deployment starts doing that because the code
+  shipped.
+
+### From a shell: `cmagent im`
+
+The same two tools, driven from a terminal instead of by the agent:
+
+```sh
+cmagent im list                       # channels configured on this machine
+cmagent im describe -t telegram       # what that adapter supports
+
+# reading
+cmagent im chats    -t telegram [--query work] [--limit 20]
+cmagent im messages -t telegram --chat <chat-id> [--limit 20]
+cmagent im contacts -t lunkr --query "zhang"
+cmagent im members  -t slack --chat <channel-id>
+cmagent im download -t telegram --ref <attachment-ref> [--save-to out.pdf]
+
+# sending
+cmagent im send   -t telegram --to <chat-id> --text "build is green"
+cmagent im file   -t lunkr --to <uid> --path report.pdf
+cmagent im notify -t telegram --text "the migration finished"
+```
+
+Every command takes `--json` for the raw tool payload, which is what to
+parse in a script; without it the output is formatted for reading.
+
+No provider, no agent, no LLM call: the registry is built from the
+channel configs on disk, so it is a fast one-shot command. Useful in a
+script or a Makefile -- "ping me when this finishes" without an agent in
+the loop.
+
+It is a second FRONT-END, not a second implementation. It builds the
+same registry and hands the same tool the same argument object, so every
+guardrail above applies unchanged: `allow_outbound_send` still gates
+sending, an adapter that lacks an action still answers `not_supported`,
+and an action added to `messaging_send` shows up here for free. A CLI
+that called the adapters directly would have had to restate all of
+that -- and `allow_outbound_send` would have become a setting the agent
+honours and the CLI ignores.
+
+`cmagent im send --help` lists the rest of the flags.
+
+Nine send-class actions are deliberately absent -- `edit_message` and
+`delete_message` need the id of a message this process does not
+remember, `send_buttons`'s useful form blocks waiting for a click,
+`open_modal` and `create_thread` attach to a live interaction a shell
+does not have, and `add_friend` / `accept_friend` / `send_pat` are
+interactive Lunkr features. Each is listed with its reason in
+`DECLINED_ACTIONS` (`src/commands/im.rs`), and a test fails when an
+action is added to either tool until it is either exposed here or
+declined there: the read half of this CLI was missing for a month
+because nothing enumerated the set.
+
 ### Interactive buttons
 
 `messaging_send { action: "send_buttons", wait_response: true,

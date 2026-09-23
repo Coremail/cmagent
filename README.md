@@ -135,7 +135,9 @@ via the `brain` tool, with FTS search and a memory browser.
 
 Run cmagent as a bot on **Telegram, Slack, Discord, WeChat, or Lunkr**: it
 answers on a channel and can proactively send messages, files, and interactive
-buttons through one unified `messaging_*` surface. Inbound can be audited. See
+buttons through one unified `messaging_*` surface. Inbound can be audited.
+`cmagent im` drives that same surface from a shell, with no agent and no LLM
+involved — handy for "ping me on Telegram when this finishes" in a script. See
 [docs/channels.md](docs/channels.md).
 
 ### MCP
@@ -185,10 +187,13 @@ cmagent -m "..." [--agent X]       # one-shot, non-interactive
 cmagent gateway [--port 3100]      # HTTP API; `gateway user add` for tokens
 cmagent acp [--agent X]            # ACP stdio server (IDE integration)
 cmagent ralph <new|run|status|...> # long iterative tasks
+cmagent im <send|file|notify|chats|messages|contacts|members|download|list|describe>
 cmagent init                       # first-time setup wizard
 cmagent config                     # interactive config editor
 cmagent doctor [--fix]             # diagnostics (+ auto-fix migrations)
 cmagent docs [topic]               # read the bundled guides in the terminal
+cmagent stats                      # token / cost totals across this workspace
+cmagent path <status|add|remove>   # put `cmagent` on a terminal's PATH
 cmagent lsp list                   # supported language servers + install hints
 cmagent workspace                  # browse / rename / delete sessions
 cmagent skill <cmd>                # list / install / enable / disable skills
